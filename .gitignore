@@ -1,0 +1,23 @@
+# autotools
+*.in
+Makefile
+.deps/*
+src/.deps/*
+configure
+config.*
+aclocal.m4
+autom4te.cache/
+autoscan.log
+compile
+configure.scan
+depcomp
+install-sh
+mattools-1.tar.gz
+missing
+
+# binaries
+*.o
+mat
+
+# file
+*.mat
