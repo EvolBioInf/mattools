@@ -10,12 +10,12 @@ Let us assume you have `mat` installed via the way described below. Then you get
 
     $ mat --help
     The available commands are:
-	 compare     Compute the distance between two matrices
-	 format      Format the distance matrix
-	 grep        Print submatrix for names matching a pattern
-	 nj          Convert to a tree by neighbor joining
+     compare     Compute the distance between two matrices
+     format      Format the distance matrix
+     grep        Print submatrix for names matching a pattern
+     nj          Convert to a tree by neighbor joining
 
-	Use 'mat <command> --help' to get guidance on the usage of a command.
+    Use 'mat <command> --help' to get guidance on the usage of a command.
 
 ### Comparison
 
@@ -31,8 +31,8 @@ Unfortunately, the phylip distance matrix format is poorly designed, described, 
     B  0.5
     $ mat format lowertriangle.mat
     2
-	A          0.0000e+00 5.0000e-01
-	B          5.0000e-01 0.0000e+00
+    A          0.0000e+00 5.0000e-01
+    B          5.0000e-01 0.0000e+00
 
 To verify that the distance matrix is indeed a distance matrix in the mathematical sense, the option `--validate` can be used. The mat tools will then hunt for errors and try to fix them, where possible.
 
