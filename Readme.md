@@ -1,4 +1,4 @@
-# mattools - utilities for distance matrices
+# mattools — utilities for distance matrices
 
 Phylip distance matrices are a common intermediate format in phylogeny reconstruction. This tool set consists of a small set of utilities for their manipulation, formatting and comparison.
 
