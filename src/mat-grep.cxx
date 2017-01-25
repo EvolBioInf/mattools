@@ -13,13 +13,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <err.h>
 #include <getopt.h>
 #include <iostream>
+#include <numeric>
 #include <regex>
 #include <string>
+#include <vector>
 #include "matrix.h"
 
 /** @brief Grep names and remove names that don't match the given pattern.

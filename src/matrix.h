@@ -19,8 +19,8 @@
 #include <iostream>
 #include <regex>
 #include <string>
-#include <vector>
 #include <unistd.h>
+#include <vector>
 
 class matrix
 {
@@ -28,7 +28,7 @@ class matrix
 	using size_type = size_t;
 
   protected:
-  	/// The size of the matrix
+	/// The size of the matrix
 	size_type size = 0;
 	/// A list of names (of sequences)
 	std::vector<std::string> names = {};
