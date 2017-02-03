@@ -29,7 +29,7 @@ static char unescape(const char *);
 
 static double PRECISION = 0.05;
 static const /*expr*/ auto close_enough = [](double a, double b) {
-	return a * (1.0 - PRECISION) < b && b < a * (1.0 + PRECISION);
+	return a * (1.0 - PRECISION) <= b && b <= a * (1.0 + PRECISION);
 };
 
 /**
