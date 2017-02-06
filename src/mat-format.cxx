@@ -126,21 +126,10 @@ static char unescape(const char *str)
  * @param self - The matrix to validate.
  * @returns the fixed matrix.
  */
-static matrix validate_and_fix(const matrix &original)
+static matrix fix(const matrix &original)
 {
-	auto self = matrix{original};
+	auto self = matrix(original);
 	auto size = self.get_size();
-
-	// check name uniqueness
-	auto names_copy = self.get_names();
-	std::sort(names_copy.begin(), names_copy.end());
-	for (size_t i = 0; i < size - 1; i++) {
-		// maybe only check first ten chars?
-		if (names_copy[i] == names_copy[i + 1]) {
-			// I don't know what to do — panic!
-			errx(1, "The name %s appears twice.", names_copy[i].c_str());
-		}
-	}
 
 	// check positivity
 	for (size_t i = 0; i < size; i++) {
@@ -176,6 +165,32 @@ static matrix validate_and_fix(const matrix &original)
 		}
 	}
 
+	return self;
+}
+
+/**
+ * @brief Validate that the matrix is a proper distance matrix. Errors are
+ * non-recoverable.
+ *
+ * @param self - The matrix to validate.
+ * @returns the fixed matrix.
+ */
+static matrix validate(const matrix &original)
+{
+	auto self = matrix{original};
+	auto size = self.get_size();
+
+	// check name uniqueness
+	auto names_copy = self.get_names();
+	std::sort(names_copy.begin(), names_copy.end());
+	for (size_t i = 0; i < size - 1; i++) {
+		// maybe only check first ten chars?
+		if (names_copy[i] == names_copy[i + 1]) {
+			// I don't know what to do — panic!
+			errx(1, "The name %s appears twice.", names_copy[i].c_str());
+		}
+	}
+
 	// check triangle inequality
 	for (size_t i = 0; i < size; i++) {
 		for (size_t j = 0; j < i; j++) {
@@ -193,7 +208,7 @@ static matrix validate_and_fix(const matrix &original)
 		}
 	}
 
-	return original;
+	return self;
 }
 
 /**
@@ -209,6 +224,7 @@ int mat_format(int argc, char **argv)
 		{"help", no_argument, 0, 'h'}, // print help
 		{"sort", no_argument, 0, 's'}, // sort by name
 		{"validate", no_argument, 0, 'v'},
+		{"fix", no_argument, 0, 'f'},
 		{"precision", required_argument, 0, 0},
 		{"separator", required_argument, 0, 0},
 		{"format", required_argument, 0, 0},
@@ -217,15 +233,16 @@ int mat_format(int argc, char **argv)
 		{0, 0, 0, 0} //
 	};
 
-	auto sort_flag = false;
+	auto fix_flag = false;
 	auto format_flag = false;
-	auto validate_flag = false;
-	auto separator = ' ';
 	auto format_specifier = "%1.4e";
+	auto separator = ' ';
+	auto sort_flag = false;
+	auto validate_flag = false;
 
 	while (true) {
 		int long_index;
-		int c = getopt_long(argc, argv, "hsv", long_options, &long_index);
+		int c = getopt_long(argc, argv, "fhsv", long_options, &long_index);
 
 		if (c == -1) {
 			break;
@@ -266,8 +283,12 @@ int mat_format(int argc, char **argv)
 				}
 				break;
 			}
+			case 'f': fix_flag = true; break;
 			case 'h': mat_format_usage(EXIT_SUCCESS);
-			case 'v': validate_flag = true; break;
+			case 'v':
+				validate_flag = true;
+				fix_flag = true;
+				break;
 			case 's': sort_flag = true; break;
 			case '?': // intentional fall-through
 			default: mat_format_usage(EXIT_FAILURE);
@@ -279,8 +300,12 @@ int mat_format(int argc, char **argv)
 	auto matrices = parse_all(argv);
 
 	for (auto &m : matrices) {
+		if (fix_flag) {
+			m = fix(m);
+		}
+
 		if (validate_flag) {
-			m = validate_and_fix(m);
+			m = validate(m);
 		}
 
 		if (sort_flag) {
@@ -307,14 +332,15 @@ static void mat_format_usage(int status)
 		"usage: mat format [OPTIONS] [FILE...]\n" // this comment is a hack
 		"Format the distance matrix.\n\n"
 		"Available options:\n"
+		"  -f, --fix             fix small errors\n"
 		"      --format <str>    use <str> as the format string; default: "
 		"%%1.4e\n"
 		"      --precision <flt> precision to use in comparisons; default: "
 		"0.05\n"
 		"      --separator <c>   set the cell separator to <c>; default: ' ' "
 		"aka. space\n"
-		"      --sort            sort by name\n"
-		"  -v, --validate        validate for correctness\n"
+		"  -s, --sort            sort by name\n"
+		"  -v, --validate        validate for correctness (implies -f)\n"
 		"  -h, --help            print this help\n"};
 
 	fprintf(status == EXIT_SUCCESS ? stdout : stderr, str);
