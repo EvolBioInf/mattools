@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <cassert>
+#include <cmath>
 #include <err.h>
 #include <errno.h>
 #include <getopt.h>
@@ -188,6 +189,18 @@ static matrix validate(const matrix &original)
 		if (names_copy[i] == names_copy[i + 1]) {
 			// I don't know what to do — panic!
 			errx(1, "The name %s appears twice.", names_copy[i].c_str());
+		}
+	}
+
+	// check nan and zero beyond main diagonal
+	for (size_t i = 0; i < size; i++) {
+		for (size_t j = 0; j < i; j++) {
+			if (close_enough(self.entry(i, j), 0)) {
+				errx(1, "Zero entry beyond the main diagonal (%zu,%zu).", i, j);
+			}
+			if (std::isnan(self.entry(i, j))) {
+				errx(1, "Not a Number (%zu,%zu)", i, j);
+			}
 		}
 	}
 
