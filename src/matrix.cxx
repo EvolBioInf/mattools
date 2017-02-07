@@ -68,15 +68,33 @@ auto parse_line(const std::string &file_name, std::istream *input,
 		err(errno, "%s: error reading name", file_name.c_str());
 	}
 
-	double val;
-	while (max_values-- > 0 && (*input >> val)) {
-		values.push_back(val);
-	}
+	while (max_values-- > 0) {
+		auto str = std::string();
+		auto value = 0.0;
 
-	/* If error is recoverable, reset. This happens when we read past the end of
-	 * a line and tried to interpret the next name as a value instead. */
-	if (input->fail()) {
-		input->clear();
+		*input >> str;
+		try {
+			value = std::stod(str); // also parses nan
+		} catch (std::exception &e) {
+			/* If error is recoverable, reset. This happens when we read past
+			 * the end of a line and tried to interpret the next name as a value
+			 * instead.
+			 */
+			if (input->fail()) {
+				input->clear();
+			}
+
+			input->putback(' ');
+			// not a double, probably a name. push back
+			for (auto it = str.crbegin(); it != str.crend(); it++) {
+				input->putback(*it);
+			}
+
+			input->putback(' ');
+			break; // out of the loop
+		}
+
+		values.push_back(value);
 	}
 
 	return std::make_pair(name, values);
