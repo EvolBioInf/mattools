@@ -1,0 +1,110 @@
+.TH mat "1" "2017-02-08" "@VERSION@" "mattools manual"
+.SH NAME
+mattools \- utilities for distance matrices
+.SH SYNOPSIS
+.B mat \fICOMMAND\fR
+[\fIOPTIONS\fR] \fIFILES\fR...
+.SH DESCRIPTION
+.TP
+The \fBmattools\fR are a set of utilities for the manipulation, formatting and comparison of distance matrices in PHYLIP format. The following commands are available. See below for a list of options.
+
+.TP
+mat \fBcompare\fR [\fIOPTIONS\fR] \fIFILES\fR...
+Compute the distance between two matrices.
+.TP
+mat \fBformat\fR [\fIOPTIONS\fR] \fIFILES\fR...
+Interpret the input as a distance matrix and provide a properly formatted output.
+.TP
+mat \fBgrep\fR \fIPATTERN\fR [\fIOPTIONS\fR] \fIFILES\fR...
+Print only the submatrix for names matching a the given regular expression. The \fIPATTERN\fR is assumed to be in ECMAScript (JavaScript) syntax.
+.TP
+mat \fBnj\fR [\fIOPTIONS\fR] \fIFILES\fR...
+Build a tree by neighbor joining and outputs it in NEWICK format. Also computes support values via quartet analysis.
+
+.LP
+All commands read PHYLIP distance matrices from the given files. If no file names are supplied, \fBmat\fR reads from \fIstdin\fR instead.
+
+
+.SH PHYLIP DISTANCE MATRICES
+
+The PHYLIP distance matrix is a terrible data format but commonly used. On its first line it states the dimension of the matrix \fIN\fR. Then follow \fIN\fR rows, each starting with the name of a sequence. The name is truncated to ten characters and padded with spaces if necessary. 
+
+    3
+    S0         0.0000 0.0957 0.0975
+    S1         0.0957 0.0000 0.1822
+    S2         0.0975 0.1822 0.0000
+
+Behind each name follow up to \fIN\fR entries of the matrix. Each entry is separated by a blank space. Missing input values are set to zero.
+
+There also exists a lower triangular format, with or without main diagonal. This is accepted as input, but the mattools will always output full square matrices.
+
+
+.SH GENERAL OPTIONS
+.TP
+\fB\--version\fR
+Outputs version information.
+.TP
+\fB\--help\fR
+Print general help.
+
+
+.SH COMPARE OPTIONS
+.TP
+\fB\-f\fR, \fB\--full\fR
+By default, \fBmat\fR computes the euclidean distance of the first two given distance matrices. With this option enabled, all distance matrices are compared pairwise. The output is, yet again, a distance matrix.
+.TP
+\fB\--help\fR
+Print help for compare command.
+
+
+.SH FORMAT OPTIONS
+.TP
+\fB\-f\fR, \fB\--fix\fR
+With this option, small errors are fixed automatically. These include asymmetric values, non-zero values on the main diagonal, and negative values.
+.TP
+\fB\--format=\fR\fISTRING\fR
+This option can be used to change the way each value of the distance matrix is printed. The \fISTRING\fR is interpreted as a C-style \fBprintf\fR(3) format string. The only given argument is a \fIdouble\fR. The default value of \fISTRING\fR is \fB%1.4e\fR.
+.TP
+\fB\--precision=\fR\fIPRECISION\fR
+Floats cannot be compared equal, thus two values with a relative error of \fIPRECISION\fR are considered the same. The default value for \fIPRECISION\fR is \fB0.05\fR.
+.TP
+\fB\--separator=\fR\fISEP\fR
+Use the \fISEP\fR character to separate columns in the output. The default value for \fISEP\fR is a blank space i.e. ' '. \fISEP\fR can also interpret C-style escape codes such as \fB\\t\fR.
+.TP
+\fB\-s\fR, \fB\--sort\fR
+Rearrange the matrix by sorting the names lexicographically. Useful for canonizing output.
+.TP
+\fB\-v\fR, \fB\--validate\fR
+Validate the input for correctness: Checks for double names, zeros beyond the main diagonal, NaNs, and also verifies triangle inequality. Implicitly applies \fB--fix\fR before validation.
+.TP
+\fB-h\fR, \fB\--help\fR
+Print help for format command.
+
+
+.SH GREP OPTIONS
+.TP
+\fB\-v\fR, \fB\--invert-match\fR
+Keep all names that do not match the pattern.
+.TP
+\fB-h\fR, \fB\--help\fR
+Print help for grep command.
+
+
+.SH NEIGHBOR JOINING OPTIONS
+.TP
+\fB-h\fR, \fB\--help\fR
+Print help for neighbor joining command.
+
+
+.SH COPYRIGHT
+Copyright \(co 2017 Fabian Klötzl
+License GPLv3+: GNU GPL version 3 or later.
+.br
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+The full license text is available at <http://gnu.org/licenses/gpl.html>.
+.PP
+.SH BUGS
+.SS Reporting Bugs
+Please report bugs to <kloetzl@evolbio.mpg.de> or at <https://github.com/kloetzl/mattools>.
+.SS

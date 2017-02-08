@@ -21,5 +21,7 @@ AC_CHECK_FUNCS([memmove sqrt])
 AC_CONFIG_FILES([
  Makefile
  src/Makefile
+ docs/mat.1
+ docs/Makefile
 ])
 AC_OUTPUT
