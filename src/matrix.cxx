@@ -20,13 +20,24 @@
 #include <fstream>
 #include <iostream>
 
-/** @brief Convert a matrix into a human-readable string (phylip format).
- *
- * @returs a string representing the matrix.
- */
-std::string matrix::to_string() const
+/**
+* @brief Print the given matrix into a string. Allows for modified formatting.
+*
+* The default for format_specifier is chosen, so that four significant digits
+* are displayed and NaNs are right-aligned.
+*
+* @param self - The matrix to be printed.
+* @param separator - The character printed in between two cells.
+* @param format_specifier - A printf-style format specifier
+* @returns the formatted string
+*/
+std::string format(const matrix &self, char separator = ' ',
+				   const char *format_specifier = "%9.3e")
 {
 	std::string ret{};
+	auto size = self.get_size();
+	const auto &names = self.get_names();
+
 	char buf[100];
 	buf[0] = '\0';
 	// a rough estimate of the resulting string size
@@ -39,13 +50,23 @@ std::string matrix::to_string() const
 		snprintf(buf, 100, "%-10.10s", names[i].c_str());
 		ret += buf;
 		for (size_t j = 0; j < size; j++) {
-			snprintf(buf, 100, " %1.4e", entry(i, j));
+			ret += separator;
+			snprintf(buf, 100, format_specifier, self.entry(i, j));
 			ret += buf;
 		}
 		ret += "\n";
 	}
 
 	return ret;
+}
+
+/** @brief Convert a matrix into a human-readable string (phylip format).
+ *
+ * @returs a string representing the matrix.
+ */
+std::string matrix::to_string() const
+{
+	return format(*this);
 }
 
 /** @brief Read a single "line" from a distance matrix.

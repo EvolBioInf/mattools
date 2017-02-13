@@ -54,43 +54,6 @@ static matrix sort(const matrix &self)
 }
 
 /**
- * @brief Print the given matrix into a string. Allows for modified formatting.
- *
- * @param self - The matrix to be printed.
- * @param separator - The character printed in between two cells.
- * @param format_specifier - A printf-style format specifier
- * @returns the formatted string
- */
-static std::string format(const matrix &self, char separator,
-						  const char *format_specifier)
-{
-	std::string ret{};
-	auto size = self.get_size();
-	const auto &names = self.get_names();
-
-	char buf[100];
-	buf[0] = '\0';
-	// a rough estimate of the resulting string size
-	ret.reserve(size * 10 + size * size * 5 + size);
-
-	ret += std::to_string(size);
-	ret += "\n";
-
-	for (size_t i = 0; i < size; i++) {
-		snprintf(buf, 100, "%-10.10s", names[i].c_str());
-		ret += buf;
-		for (size_t j = 0; j < size; j++) {
-			ret += separator;
-			snprintf(buf, 100, format_specifier, self.entry(i, j));
-			ret += buf;
-		}
-		ret += "\n";
-	}
-
-	return ret;
-}
-
-/**
  * @brief Unescape a sequence to its corresponding character. Why is there no
  * standard function for this?
  *
@@ -248,7 +211,7 @@ int mat_format(int argc, char **argv)
 
 	auto fix_flag = false;
 	auto format_flag = false;
-	auto format_specifier = "%1.4e";
+	auto format_specifier = "%9.3e";
 	auto separator = ' ';
 	auto sort_flag = false;
 	auto validate_flag = false;

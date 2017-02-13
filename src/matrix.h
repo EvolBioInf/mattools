@@ -181,3 +181,4 @@ matrix sample(const matrix &self, InputIt first, InputIt last)
 
 // defined in matrix.cxx
 std::vector<matrix> parse_all(const char *const *);
+std::string format(const matrix &, char, const char *);
