@@ -198,6 +198,7 @@ int mat_format(int argc, char **argv)
 {
 	static struct option long_options[] = {
 		{"help", no_argument, 0, 'h'}, // print help
+		{"truncate-names", no_argument, 0, 0},
 		{"sort", no_argument, 0, 's'}, // sort by name
 		{"validate", no_argument, 0, 'v'},
 		{"fix", no_argument, 0, 'f'},
@@ -213,6 +214,7 @@ int mat_format(int argc, char **argv)
 	auto format_flag = false;
 	auto format_specifier = "%9.3e";
 	auto separator = ' ';
+	auto truncate_names = false;
 	auto sort_flag = false;
 	auto validate_flag = false;
 
@@ -257,6 +259,12 @@ int mat_format(int argc, char **argv)
 					PRECISION = prec;
 					break;
 				}
+
+				if (option_str == "truncate-names") {
+					truncate_names = true;
+					format_flag = true;
+					break;
+				}
 				break;
 			}
 			case 'f': fix_flag = true; break;
@@ -288,8 +296,9 @@ int mat_format(int argc, char **argv)
 			m = sort(m);
 		}
 
-		auto str = format_flag ? format(m, separator, format_specifier)
-							   : m.to_string();
+		auto str = format_flag
+					   ? format(m, separator, format_specifier, truncate_names)
+					   : m.to_string();
 		std::cout << str;
 	}
 
@@ -316,6 +325,7 @@ static void mat_format_usage(int status)
 		"      --separator <c>   set the cell separator to <c>; default: ' ' "
 		"aka. space\n"
 		"  -s, --sort            sort by name\n"
+		"      --truncate-names  truncate names to ten characters\n"
 		"  -v, --validate        validate for correctness (implies -f)\n"
 		"  -h, --help            print this help\n"};
 

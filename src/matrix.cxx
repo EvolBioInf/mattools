@@ -32,11 +32,13 @@
 * @returns the formatted string
 */
 std::string format(const matrix &self, char separator = ' ',
-				   const char *format_specifier = "%9.3e")
+				   const char *format_specifier = "%9.3e",
+				   bool truncate_names = false)
 {
 	std::string ret{};
 	auto size = self.get_size();
 	const auto &names = self.get_names();
+	auto name_format = truncate_names ? "%-10.10s" : "%-10s";
 
 	char buf[100];
 	buf[0] = '\0';
@@ -47,7 +49,7 @@ std::string format(const matrix &self, char separator = ' ',
 	ret += "\n";
 
 	for (size_t i = 0; i < size; i++) {
-		snprintf(buf, 100, "%-10.10s", names[i].c_str());
+		snprintf(buf, 100, name_format, names[i].c_str());
 		ret += buf;
 		for (size_t j = 0; j < size; j++) {
 			ret += separator;
@@ -148,7 +150,8 @@ auto parse_line(const std::string &file_name, std::istream *input,
  * @param input - The input stream to read from
  * @returns The matrix
  */
-matrix parse_tolerant_internal(const std::string &file_name, std::istream *input)
+matrix parse_tolerant_internal(const std::string &file_name,
+							   std::istream *input)
 {
 	size_t size;
 	*input >> size;
