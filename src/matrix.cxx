@@ -148,7 +148,7 @@ auto parse_line(const std::string &file_name, std::istream *input,
  * @param input - The input stream to read from
  * @returns The matrix
  */
-matrix parse_tolerant(const std::string &file_name, std::istream *input)
+matrix parse_tolerant_internal(const std::string &file_name, std::istream *input)
 {
 	size_t size;
 	*input >> size;
@@ -216,14 +216,14 @@ matrix parse_tolerant(const std::string &file_name, std::istream *input)
 	return ret;
 }
 
-/** @brief Parse all matrices from a file and write them to a structure.
+/** @brief Parse the first matrix from a file and write it to a structure.
  *
  * @param file_name - The file to read.
  * @param out - An output iterator we write the matrices to.
  * @returns the position one past the last written matrix.
  */
 template <typename OutputIt>
-OutputIt parse_tolerant_all(const std::string &file_name, OutputIt out)
+OutputIt parse_tolerant(const std::string &file_name, OutputIt out)
 {
 	std::ifstream file;
 	std::istream *input = &std::cin;
@@ -243,8 +243,8 @@ OutputIt parse_tolerant_all(const std::string &file_name, OutputIt out)
 		}
 	};
 
-	while (skip_blank_lines(input), (input->good() && !input->eof())) {
-		*out++ = parse_tolerant(file_name, input);
+	if (skip_blank_lines(input), (input->good() && !input->eof())) {
+		*out++ = parse_tolerant_internal(file_name, input);
 	}
 
 	return out;
@@ -276,7 +276,7 @@ std::vector<matrix> parse_all(const char *const *argv)
 	matrices.reserve(file_names.size());
 
 	for (const auto &file_name : file_names) {
-		parse_tolerant_all(file_name, inserter);
+		parse_tolerant(file_name, inserter);
 	}
 
 	return matrices;
