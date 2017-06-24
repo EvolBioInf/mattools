@@ -137,21 +137,29 @@ static matrix fix(const matrix &original)
  * non-recoverable.
  *
  * @param self - The matrix to validate.
+ * @param truncate_names - True iff names are truncated.
  * @returns the fixed matrix.
  */
-static matrix validate(const matrix &original)
+static matrix validate(const matrix &original, bool truncate_names)
 {
 	auto self = matrix{original};
 	auto size = self.get_size();
+
+	// maybe only check first ten chars?
+	auto equal = [=](const std::string &a, const std::string &b) {
+		return truncate_names ? a.compare(0, 10, b, 0, 10) == 0 : a == b;
+	};
 
 	// check name uniqueness
 	auto names_copy = self.get_names();
 	std::sort(names_copy.begin(), names_copy.end());
 	for (size_t i = 0; i < size - 1; i++) {
-		// maybe only check first ten chars?
-		if (names_copy[i] == names_copy[i + 1]) {
+		if (equal(names_copy[i], names_copy[i + 1])) {
 			// I don't know what to do — panic!
-			errx(1, "The name %s appears twice.", names_copy[i].c_str());
+			auto str = truncate_names
+						   ? "The truncated name %.10s appears twice."
+						   : "The name %s appears twice.";
+			errx(1, str, names_copy[i].c_str());
 		}
 	}
 
@@ -214,8 +222,8 @@ int mat_format(int argc, char **argv)
 	auto format_flag = false;
 	auto format_specifier = "%9.3e";
 	auto separator = ' ';
-	auto truncate_names = false;
 	auto sort_flag = false;
+	auto truncate_names = false;
 	auto validate_flag = false;
 
 	while (true) {
@@ -289,7 +297,7 @@ int mat_format(int argc, char **argv)
 		}
 
 		if (validate_flag) {
-			m = validate(m);
+			m = validate(m, truncate_names);
 		}
 
 		if (sort_flag) {
