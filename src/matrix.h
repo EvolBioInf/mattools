@@ -46,8 +46,8 @@ class matrix
 	 * @returns the new matrix
 	 */
 	matrix(std::vector<std::string> _names, std::vector<double> _values)
-		: size{_names.size()}, names{std::move(_names)},
-		  values{std::move(_values)}
+		: size{_names.size()}, names{std::move(_names)}, values{
+															 std::move(_values)}
 	{
 		assert(size == names.size());
 		assert(size * size == values.size());
@@ -181,4 +181,4 @@ matrix sample(const matrix &self, InputIt first, InputIt last)
 
 // defined in matrix.cxx
 std::vector<matrix> parse_all(const char *const *);
-std::string format(const matrix &, char, const char *);
+std::string format(const matrix &, char, const char *, bool);

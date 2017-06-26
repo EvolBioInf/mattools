@@ -27,7 +27,7 @@ All commands read PHYLIP distance matrices from the given files. If no file name
 
 .SH PHYLIP DISTANCE MATRICES
 
-The PHYLIP distance matrix is a terrible data format but commonly used. On its first line it states the dimension of the matrix \fIN\fR. Then follow \fIN\fR rows, each starting with the name of a sequence. The name is truncated to ten characters and padded with spaces if necessary. 
+The PHYLIP distance matrix is a terrible data format but commonly used. On its first line it states the dimension of the matrix \fIN\fR. Then follow \fIN\fR rows, each starting with the name of a sequence. If necessary, the name is padded with spaces to fill ten characters.
 
     3
     S0         0.0000 0.0957 0.0975
@@ -74,6 +74,9 @@ Use the \fISEP\fR character to separate columns in the output. The default value
 \fB\-s\fR, \fB\--sort\fR
 Rearrange the matrix by sorting the names lexicographically. Useful for canonizing output.
 .TP
+\fB--truncate-names\fR
+Truncate names to ten characters.
+.TP
 \fB\-v\fR, \fB\--validate\fR
 Validate the input for correctness: Checks for double names, zeros beyond the main diagonal, NaNs, and also verifies triangle inequality. Implicitly applies \fB--fix\fR before validation.
 .TP
@@ -94,6 +97,9 @@ Print help for grep command.
 .TP
 \fB-h\fR, \fB\--help\fR
 Print help for neighbor joining command.
+.TP
+\fB--no-support\fR
+Do not compute support values.
 
 
 .SH COPYRIGHT

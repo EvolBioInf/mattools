@@ -32,11 +32,13 @@
 * @returns the formatted string
 */
 std::string format(const matrix &self, char separator = ' ',
-				   const char *format_specifier = "%9.3e")
+				   const char *format_specifier = "%9.3e",
+				   bool truncate_names = false)
 {
 	std::string ret{};
 	auto size = self.get_size();
 	const auto &names = self.get_names();
+	auto name_format = truncate_names ? "%-10.10s" : "%-10s";
 
 	char buf[100];
 	buf[0] = '\0';
@@ -47,7 +49,7 @@ std::string format(const matrix &self, char separator = ' ',
 	ret += "\n";
 
 	for (size_t i = 0; i < size; i++) {
-		snprintf(buf, 100, "%-10.10s", names[i].c_str());
+		snprintf(buf, 100, name_format, names[i].c_str());
 		ret += buf;
 		for (size_t j = 0; j < size; j++) {
 			ret += separator;
@@ -148,7 +150,8 @@ auto parse_line(const std::string &file_name, std::istream *input,
  * @param input - The input stream to read from
  * @returns The matrix
  */
-matrix parse_tolerant(const std::string &file_name, std::istream *input)
+matrix parse_tolerant_internal(const std::string &file_name,
+							   std::istream *input)
 {
 	size_t size;
 	*input >> size;
@@ -216,14 +219,14 @@ matrix parse_tolerant(const std::string &file_name, std::istream *input)
 	return ret;
 }
 
-/** @brief Parse all matrices from a file and write them to a structure.
+/** @brief Parse the first matrix from a file and write it to a structure.
  *
  * @param file_name - The file to read.
  * @param out - An output iterator we write the matrices to.
  * @returns the position one past the last written matrix.
  */
 template <typename OutputIt>
-OutputIt parse_tolerant_all(const std::string &file_name, OutputIt out)
+OutputIt parse_tolerant(const std::string &file_name, OutputIt out)
 {
 	std::ifstream file;
 	std::istream *input = &std::cin;
@@ -243,8 +246,8 @@ OutputIt parse_tolerant_all(const std::string &file_name, OutputIt out)
 		}
 	};
 
-	while (skip_blank_lines(input), (input->good() && !input->eof())) {
-		*out++ = parse_tolerant(file_name, input);
+	if (skip_blank_lines(input), (input->good() && !input->eof())) {
+		*out++ = parse_tolerant_internal(file_name, input);
 	}
 
 	return out;
@@ -276,7 +279,7 @@ std::vector<matrix> parse_all(const char *const *argv)
 	matrices.reserve(file_names.size());
 
 	for (const auto &file_name : file_names) {
-		parse_tolerant_all(file_name, inserter);
+		parse_tolerant(file_name, inserter);
 	}
 
 	return matrices;

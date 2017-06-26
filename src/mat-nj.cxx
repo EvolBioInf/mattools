@@ -42,8 +42,8 @@ class tree_node
 	}
 
 	tree_node(tree_node *lb, tree_node *rb, double ld, double rd) noexcept
-		: left_branch{lb}, right_branch{rb}, left_dist{ld}, right_dist{rd},
-		  index{-1}
+		: left_branch{lb}, right_branch{rb}, left_dist{ld},
+		  right_dist{rd}, index{-1}
 	{
 	}
 
@@ -401,17 +401,31 @@ static void mat_nj_usage(int);
  */
 int mat_nj(int argc, char **argv)
 {
-	static struct option long_options[] = {{"help", no_argument, 0, 'h'},
-										   {0, 0, 0, 0}};
+	static struct option long_options[] = {
+		{"help", no_argument, 0, 'h'},
+		{"no-support", no_argument, 0, 0},
+		{0, 0, 0, 0} // hack
+	};
+
+	auto support = true;
 
 	while (true) {
-		int c = getopt_long(argc, argv, "h", long_options, NULL);
+		int long_index;
+		int c = getopt_long(argc, argv, "h", long_options, &long_index);
 
 		if (c == -1) {
 			break;
 		}
 
 		switch (c) {
+			case 0: {
+				auto option_str = std::string(long_options[long_index].name);
+				if (option_str == "no-support") {
+					support = false;
+					break;
+				}
+				break;
+			}
 			case 'h': mat_nj_usage(EXIT_SUCCESS);
 			case '?': // intentional fall-through
 			default: mat_nj_usage(EXIT_FAILURE);
@@ -428,7 +442,9 @@ int mat_nj(int argc, char **argv)
 		}
 
 		auto t = nj(mat);
-		quartet_all(t, mat);
+		if (support) {
+			quartet_all(t, mat);
+		}
 		std::cout << to_newick(t, mat) << std::endl;
 	}
 
@@ -437,10 +453,12 @@ int mat_nj(int argc, char **argv)
 
 static void mat_nj_usage(int status)
 {
-	static const char str[] = {"usage: mat nj [OPTIONS] [FILE...]\n"
-							   "Build a tree via neighbor joining.\n\n"
-							   "Available options:\n"
-							   "  -h, --help           print this help\n"};
+	static const char str[] = {
+		"usage: mat nj [OPTIONS] [FILE...]\n"
+		"Build a tree via neighbor joining.\n\n"
+		"Available options:\n"
+		"  -h, --help           print this help\n"
+		"      --no-support     do not compute support values\n"};
 
 	fprintf(status == EXIT_SUCCESS ? stdout : stderr, str);
 	exit(status);

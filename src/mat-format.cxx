@@ -137,21 +137,29 @@ static matrix fix(const matrix &original)
  * non-recoverable.
  *
  * @param self - The matrix to validate.
+ * @param truncate_names - True iff names are truncated.
  * @returns the fixed matrix.
  */
-static matrix validate(const matrix &original)
+static matrix validate(const matrix &original, bool truncate_names)
 {
 	auto self = matrix{original};
 	auto size = self.get_size();
+
+	// maybe only check first ten chars?
+	auto equal = [=](const std::string &a, const std::string &b) {
+		return truncate_names ? a.compare(0, 10, b, 0, 10) == 0 : a == b;
+	};
 
 	// check name uniqueness
 	auto names_copy = self.get_names();
 	std::sort(names_copy.begin(), names_copy.end());
 	for (size_t i = 0; i < size - 1; i++) {
-		// maybe only check first ten chars?
-		if (names_copy[i] == names_copy[i + 1]) {
+		if (equal(names_copy[i], names_copy[i + 1])) {
 			// I don't know what to do — panic!
-			errx(1, "The name %s appears twice.", names_copy[i].c_str());
+			auto str = truncate_names
+						   ? "The truncated name %.10s appears twice."
+						   : "The name %s appears twice.";
+			errx(1, str, names_copy[i].c_str());
 		}
 	}
 
@@ -198,6 +206,7 @@ int mat_format(int argc, char **argv)
 {
 	static struct option long_options[] = {
 		{"help", no_argument, 0, 'h'}, // print help
+		{"truncate-names", no_argument, 0, 0},
 		{"sort", no_argument, 0, 's'}, // sort by name
 		{"validate", no_argument, 0, 'v'},
 		{"fix", no_argument, 0, 'f'},
@@ -214,6 +223,7 @@ int mat_format(int argc, char **argv)
 	auto format_specifier = "%9.3e";
 	auto separator = ' ';
 	auto sort_flag = false;
+	auto truncate_names = false;
 	auto validate_flag = false;
 
 	while (true) {
@@ -257,6 +267,12 @@ int mat_format(int argc, char **argv)
 					PRECISION = prec;
 					break;
 				}
+
+				if (option_str == "truncate-names") {
+					truncate_names = true;
+					format_flag = true;
+					break;
+				}
 				break;
 			}
 			case 'f': fix_flag = true; break;
@@ -281,15 +297,16 @@ int mat_format(int argc, char **argv)
 		}
 
 		if (validate_flag) {
-			m = validate(m);
+			m = validate(m, truncate_names);
 		}
 
 		if (sort_flag) {
 			m = sort(m);
 		}
 
-		auto str = format_flag ? format(m, separator, format_specifier)
-							   : m.to_string();
+		auto str = format_flag
+					   ? format(m, separator, format_specifier, truncate_names)
+					   : m.to_string();
 		std::cout << str;
 	}
 
@@ -316,6 +333,7 @@ static void mat_format_usage(int status)
 		"      --separator <c>   set the cell separator to <c>; default: ' ' "
 		"aka. space\n"
 		"  -s, --sort            sort by name\n"
+		"      --truncate-names  truncate names to ten characters\n"
 		"  -v, --validate        validate for correctness (implies -f)\n"
 		"  -h, --help            print this help\n"};
 
