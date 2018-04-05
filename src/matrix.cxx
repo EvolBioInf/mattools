@@ -21,16 +21,16 @@
 #include <iostream>
 
 /**
-* @brief Print the given matrix into a string. Allows for modified formatting.
-*
-* The default for format_specifier is chosen, so that four significant digits
-* are displayed and NaNs are right-aligned.
-*
-* @param self - The matrix to be printed.
-* @param separator - The character printed in between two cells.
-* @param format_specifier - A printf-style format specifier
-* @returns the formatted string
-*/
+ * @brief Print the given matrix into a string. Allows for modified formatting.
+ *
+ * The default for format_specifier is chosen, so that four significant digits
+ * are displayed and NaNs are right-aligned.
+ *
+ * @param self - The matrix to be printed.
+ * @param separator - The character printed in between two cells.
+ * @param format_specifier - A printf-style format specifier
+ * @returns the formatted string
+ */
 std::string format(const matrix &self, char separator = ' ',
 				   const char *format_specifier = "%9.3e",
 				   bool truncate_names = false)

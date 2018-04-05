@@ -17,7 +17,9 @@
 #include <stdio.h>
 #include <string>
 
+int mat_combine(int, char **);
 int mat_compare(int, char **);
+int mat_diff(int, char **);
 int mat_grep(int, char **);
 int mat_nj(int, char **);
 int mat_format(int, char **);
@@ -51,8 +53,16 @@ int main(int argc, char *argv[])
 	argc -= 1, argv += 1;
 
 	auto command = first_arg;
+	if (command == "combine") {
+		return mat_combine(argc, argv);
+	}
+
 	if (command == "compare") {
 		return mat_compare(argc, argv);
+	}
+
+	if (command == "diff") {
+		return mat_diff(argc, argv);
 	}
 
 	if (command == "grep") {

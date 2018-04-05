@@ -184,8 +184,9 @@ static matrix validate(const matrix &original, bool truncate_names)
 					!close_enough(self.entry(i, j),
 								  self.entry(i, k) + self.entry(j, k))) {
 					// panic
-					errx(1, "Violation of triangle inequality for (%zu,%zu) "
-							"and (%zu,%zu)+(%zu,%zu)",
+					errx(1,
+						 "Violation of triangle inequality for (%zu,%zu) "
+						 "and (%zu,%zu)+(%zu,%zu)",
 						 i, j, i, k, k, j);
 				}
 			}

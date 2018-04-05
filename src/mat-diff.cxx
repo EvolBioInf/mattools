@@ -40,46 +40,7 @@ auto make_index_map(const std::vector<T> &container)
 	return ret;
 }
 
-// not exposed, yet
-double p1_norm(const matrix &self, const matrix &other)
-{
-	const auto &self_names = self.get_names();
-	auto self_map = make_index_map(self_names);
-	auto other_map = make_index_map(other.get_names());
-
-	// compute the intersection of names
-	auto common_names = std::vector<std::string>{};
-	for (const auto &name : self_names) {
-		if (other_map.find(name) != other_map.end()) {
-			common_names.push_back(name);
-		}
-	}
-
-	double dist = 0;
-
-	for (size_t i = 0; i < common_names.size() - 1; i++) {
-		const auto &name1 = common_names[i];
-		for (size_t j = i + 1; j < common_names.size(); j++) {
-			const auto &name2 = common_names[j];
-			auto d1 = self.entry(self_map[name1], self_map[name2]);
-			auto d2 = other.entry(other_map[name1], other_map[name2]);
-			dist += std::fabs(d1 - d2);
-		}
-	}
-
-	return dist;
-}
-
-/**
- * @brief Treat two distance matrices as vectors and compute their euklidian
- * distance. To avoid errors from different arrangements, the set of common
- * names is computed first and then the corresponding sub matrices are used.
- *
- * @param self - One matrix
- * @param other - The other matrix, duh.
- * @returns the euklidian distance.
- */
-double p2_norm(const matrix &self, const matrix &other)
+matrix diff(const matrix &self, const matrix &other)
 {
 	auto this_map = make_index_map(self.get_names());
 	auto other_map = make_index_map(other.get_names());
@@ -91,7 +52,8 @@ double p2_norm(const matrix &self, const matrix &other)
 		}
 	}
 
-	double dist = 0;
+	auto size = common_names.size();
+	auto ret = matrix(common_names, std::vector<double>(size * size));
 
 	for (size_t i = 0; i < common_names.size() - 1; i++) {
 		auto name1 = common_names[i];
@@ -99,17 +61,15 @@ double p2_norm(const matrix &self, const matrix &other)
 			auto name2 = common_names[j];
 			auto d1 = self.entry(this_map[name1], this_map[name2]);
 			auto d2 = other.entry(other_map[name1], other_map[name2]);
-			auto d = d1 - d2;
-			dist += d * d;
+			// std::cerr << name1 << "\t" << name2 << "\t" << d1 - d2 << std::endl;
+			ret.entry(i, j) = ret.entry(j, i) = d1 - d2;
 		}
 	}
 
-	auto n = common_names.size() * (common_names.size() - 1) / 2;
-
-	return std::sqrt(dist / n);
+	return ret;
 }
 
-static void mat_compare_usage(int status);
+static void mat_diff_usage(int status);
 
 /**
  * @brief The main function of `mat compare`.
@@ -118,11 +78,10 @@ static void mat_compare_usage(int status);
  * @param argv - It's argv, stupid. (Advanced by one from global argv.)
  * @returns 0 iff successful.
  */
-int mat_compare(int argc, char **argv)
+int mat_diff(int argc, char **argv)
 {
 	static struct option long_options[] = {
 		{"help", no_argument, 0, 0},   // print help
-		{"full", no_argument, 0, 'f'}, // full matrix
 		{0, 0, 0, 0}				   //
 	};
 
@@ -130,7 +89,7 @@ int mat_compare(int argc, char **argv)
 
 	while (true) {
 		int long_index;
-		int c = getopt_long(argc, argv, "f", long_options, &long_index);
+		int c = getopt_long(argc, argv, "", long_options, &long_index);
 
 		if (c == -1) {
 			break;
@@ -141,13 +100,12 @@ int mat_compare(int argc, char **argv)
 			{
 				auto option_string = std::string(long_options[long_index].name);
 				if (option_string == "help") {
-					mat_compare_usage(EXIT_SUCCESS);
+					mat_diff_usage(EXIT_SUCCESS);
 				}
 				break;
 			}
-			case 'f': full_matrix = true; break;
 			default: /* intentional fall-through */
-			case '?': mat_compare_usage(EXIT_FAILURE);
+			case '?': mat_diff_usage(EXIT_FAILURE);
 		}
 	}
 
@@ -159,42 +117,17 @@ int mat_compare(int argc, char **argv)
 		errx(1, "At least two matrices must be provided.");
 	}
 
-	if (!full_matrix) {
-		std::cout << p2_norm(matrices[0], matrices[1]) << std::endl;
-	} else {
-		// compute a full distance matrix
-		auto size = matrices.size();
-		auto names = std::vector<std::string>();
-		auto values = std::vector<double>(size * size);
-		names.reserve(size);
-
-		// come up with a new name for each matrix
-		for (size_t i = 1; i <= size; i++) {
-			names.push_back(std::string("M") + std::to_string(i));
-		}
-
-		auto cmpmat = matrix{names, values};
-		for (size_t i = 0; i < size; i++) {
-			for (size_t j = 0; j < size; j++) {
-				if (i == j) continue;
-				cmpmat.entry(i, j) = cmpmat.entry(j, i) =
-					p2_norm(matrices[i], matrices[j]);
-			}
-		}
-
-		std::cout << cmpmat.to_string();
-	}
+	std::cout << diff(matrices[0], matrices[1]).to_string();
 
 	return 0;
 }
 
-static void mat_compare_usage(int status)
+static void mat_diff_usage(int status)
 {
 	static const char str[] = {
-		"usage: mat compare [OPTIONS] [FILE...]\n" // this comment is a hack
+		"usage: mat diff [OPTIONS] [FILE...]\n" // this comment is a hack
 		"Compute euclidean distance of two distances matrices.\n\n"
 		"Available options:\n"
-		" -f, --full          output a full distance matrix\n"
 		"     --help          print this help\n"};
 
 	fprintf(status == EXIT_SUCCESS ? stdout : stderr, str);

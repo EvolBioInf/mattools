@@ -21,6 +21,7 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
+// #include <optional>
 
 class matrix
 {
@@ -35,6 +36,9 @@ class matrix
 	/// The matrix itself
 	std::vector<double> values = {};
 
+	bool m_has_coverages = false;
+	std::vector<double> coverages = {};
+
   public:
 	matrix() = default;
 	/** @brief Create a new matrix from a set of names and values.
@@ -46,11 +50,24 @@ class matrix
 	 * @returns the new matrix
 	 */
 	matrix(std::vector<std::string> _names, std::vector<double> _values)
-		: size{_names.size()}, names{std::move(_names)}, values{
-															 std::move(_values)}
+		: size{_names.size()}, names{std::move(_names)},
+		  values{std::move(_values)}, m_has_coverages{false}, coverages{}
+
 	{
 		assert(size == names.size());
 		assert(size * size == values.size());
+	}
+
+	matrix(std::vector<std::string> _names, std::vector<double> _values,
+		   std::vector<double> _coverages)
+		: size{_names.size()}, names{std::move(_names)}, values{std::move(
+															 _values)},
+		  m_has_coverages{true}, coverages{std::move(_coverages)}
+
+	{
+		assert(size == names.size());
+		assert(size * size == values.size());
+		assert(size * size == coverages.size());
 	}
 
 	/** @brief Access an entry by coordinates.
@@ -131,6 +148,34 @@ class matrix
 	auto get_names() const noexcept -> const std::vector<std::string> &
 	{
 		return names;
+	}
+
+	auto get_values() const noexcept -> const std::vector<double> &
+	{
+		return values;
+	}
+
+	auto has_coverages() const noexcept
+	{
+		return m_has_coverages;
+	}
+
+	auto get_coverages() const -> const std::vector<double> &
+	{
+		if (!has_coverages()) throw "no coverages.";
+		return coverages;
+	}
+
+	double &cov_entry(size_type i, size_type j)
+	{
+		if (!has_coverages()) throw "no coverages.";
+		return coverages[i * size + j];
+	}
+
+	const double &cov_entry(size_type i, size_type j) const
+	{
+		if (!has_coverages()) throw "no coverages.";
+		return coverages[i * size + j];
 	}
 
 	// defined in matrix.cxx
