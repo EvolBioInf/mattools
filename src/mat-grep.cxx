@@ -65,7 +65,10 @@ int mat_grep(int argc, char **argv)
 		mat_grep_usage(EXIT_FAILURE);
 	}
 
+	auto file_names = std::vector<std::string>();
+
 	static struct option long_options[] = {
+		{"file", required_argument, 0, 'f'},
 		{"help", no_argument, 0, 'h'},
 		{"invert-match", no_argument, 0, 'v'},
 		{0, 0, 0, 0}};
@@ -74,21 +77,17 @@ int mat_grep(int argc, char **argv)
 
 	while (true) {
 		int option_index = 0;
-		int c = getopt_long(argc, argv, "hv", long_options, &option_index);
+		int c = getopt_long(argc, argv, "f:hv", long_options, &option_index);
 
-		if (c == -1) {
-			break;
+		if (c == -1) break;
+		else if (c == 'f') {
+			file_names.push_back(optarg);
 		}
-
-		switch (c) {
-			case 'h': mat_grep_usage(EXIT_SUCCESS);
-			case 'v': {
-				invert = true;
-				break;
-			}
-			case '?': // intentional fall-through
-			default: mat_grep_usage(EXIT_FAILURE);
+		else if (c == 'h') mat_grep_usage(EXIT_SUCCESS);
+		else if (c == 'v') {
+			invert = true;
 		}
+		else mat_grep_usage(EXIT_FAILURE);
 	}
 
 	argc -= optind, argv += optind;
@@ -98,10 +97,12 @@ int mat_grep(int argc, char **argv)
 	}
 
 	auto pattern = std::string{argv[0]};
-	argv++;
+	argv++, argc--;
 	auto rpattern = std::regex(pattern);
 
-	auto matrices = parse_all(argv);
+	file_names.insert(file_names.end(), argv, argv + argc);
+
+	auto matrices = parse_all(file_names);
 
 	for (const auto &mat : matrices) {
 		std::cout << grep(mat, rpattern, invert).to_string();
@@ -117,6 +118,7 @@ static void mat_grep_usage(int status)
 		"Print submatrix for names matching the PATTERN.\n"
 		"The PATTERN can be a regular expression using ECMAScript format.\n\n"
 		"Available options:\n"
+		"  -f, --file FILE      read the matrix from FILE\n"
 		"  -h, --help           print this help\n"
 		"  -v, --invert-match   select non-matching names\n"};
 
