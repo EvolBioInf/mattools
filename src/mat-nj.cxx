@@ -42,8 +42,11 @@ class tree_node
 	}
 
 	tree_node(tree_node *lb, tree_node *rb, double ld, double rd) noexcept
-		: left_branch{lb}, right_branch{rb}, left_dist{ld},
-		  right_dist{rd}, index{-1}
+		: left_branch{lb},
+		  right_branch{rb},
+		  left_dist{ld},
+		  right_dist{rd},
+		  index{-1}
 	{
 	}
 
@@ -89,8 +92,9 @@ class tree_root : public tree_node
 
 	tree_root() = default;
 	tree_root(tree_node *lb, tree_node *rb, tree_node *eb, double ld, double rd,
-			  double ed) noexcept
-		: tree_node(lb, rb, ld, rd), extra_branch{eb}, extra_dist{ed}
+			  double ed) noexcept : tree_node(lb, rb, ld, rd),
+									extra_branch{eb},
+									extra_dist{ed}
 	{
 	}
 };
