@@ -23,6 +23,7 @@ int mat_diff(int, char **);
 int mat_grep(int, char **);
 int mat_nj(int, char **);
 int mat_format(int, char **);
+int mat_mantel(int, char **);
 static void usage(int status);
 static void version();
 
@@ -75,6 +76,10 @@ int main(int argc, char *argv[])
 
 	if (command == "format") {
 		return mat_format(argc, argv);
+	}
+
+	if (command == "mantel") {
+		return mat_mantel(argc, argv);
 	}
 
 	warnx("unknown command '%s'.", command.c_str());
