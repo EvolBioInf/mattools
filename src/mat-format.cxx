@@ -41,16 +41,10 @@ static const /*expr*/ auto close_enough = [](double a, double b) {
  */
 static matrix sort(const matrix &self)
 {
-	const auto &old_names = self.get_names();
+	auto names = self.get_names();
+	std::sort(begin(names), end(names));
 
-	auto old_indices = std::vector<size_t>(self.get_size());
-	std::iota(old_indices.begin(), old_indices.end(), size_t(0));
-	std::sort(old_indices.begin(), old_indices.end(),
-			  [&old_names](size_t ai, size_t bi) {
-				  return old_names[ai] < old_names[bi];
-			  });
-
-	return sample(self, begin(old_indices), end(old_indices));
+	return sample2(self, begin(names), end(names));
 }
 
 /**
@@ -184,9 +178,8 @@ static matrix validate(const matrix &original, bool truncate_names)
 					!close_enough(self.entry(i, j),
 								  self.entry(i, k) + self.entry(j, k))) {
 					// panic
-					errx(1,
-						 "Violation of triangle inequality for (%zu,%zu) "
-						 "and (%zu,%zu)+(%zu,%zu)",
+					errx(1, "Violation of triangle inequality for (%zu,%zu) "
+							"and (%zu,%zu)+(%zu,%zu)",
 						 i, j, i, k, k, j);
 				}
 			}
