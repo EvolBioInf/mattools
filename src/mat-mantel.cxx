@@ -26,6 +26,135 @@
 
 #include "matrix.h"
 
+template <class T> class square_iterator
+{
+  public:
+	using my_type = square_iterator<T>;
+	using matrix_type = T;
+	using size_type = matrix::size_type;
+	using value_type = double;
+	using reference =
+		typename std::conditional<std::is_const<matrix_type>::value,
+								  const double &, double &>::type;
+	using pointer = typename std::conditional<std::is_const<matrix_type>::value,
+											  const double *, double *>::type;
+
+	using iterator_category = std::bidirectional_iterator_tag;
+	using difference_type = ssize_t;
+
+  private:
+	matrix_type *data = nullptr;
+	size_type row = 0;
+	size_type col = 0;
+
+	square_iterator(matrix_type &_data, size_type _row, size_type _col)
+		: data(&_data), row(_row), col(_col)
+	{
+	}
+
+	reference value() const
+	{
+		return data->entry(row, col);
+	}
+
+	void next()
+	{
+		col++;
+		if (col >= data->get_size()) {
+			col = 0;
+			row++;
+		}
+	}
+
+	void prev()
+	{
+		if (col > 0) {
+			col--;
+		} else {
+			row--;
+			col = data->get_size();
+		}
+	}
+
+  public:
+	square_iterator(){};
+
+	reference operator*() const
+	{
+		return value();
+	}
+
+	auto &operator++()
+	{
+		next();
+		return *this;
+	}
+
+	auto operator++(int)
+	{
+		auto ret = *this;
+		next();
+		return ret;
+	}
+
+	auto &operator--()
+	{
+		prev();
+		return *this;
+	}
+
+	auto operator--(int)
+	{
+		auto ret = *this;
+		prev();
+		return ret;
+	}
+
+	bool operator==(my_type other) const
+	{
+		return data == other.data && row == other.row && col == other.col;
+	}
+
+	bool operator!=(my_type other) const
+	{
+		return !(*this == other);
+	}
+
+	bool operator<(my_type other) const
+	{
+		if (row < other.row) {
+			return true;
+		} else if (row == other.row) {
+			return col < other.col;
+		} else {
+			return false;
+		}
+	}
+
+	static auto begin(matrix_type &self)
+	{
+		return my_type(self, 0, 0);
+	}
+
+	static auto end(matrix_type &self)
+	{
+		auto size = self.get_size();
+		return my_type(self, size, 0);
+	}
+};
+
+
+template <typename T> auto begin_square(T &self)
+{
+	return square_iterator<T>::begin(self);
+}
+
+template <typename T> auto end_square(T &self)
+{
+	return square_iterator<T>::end(self);
+}
+
+
 template <class T> class lower_tr_iterator
 {
   public:
@@ -231,17 +360,11 @@ matrix normalize(const matrix &self)
 	auto ret = self;
 	auto avg = lower_triangle_avg(self);
 	auto sd = lower_triangle_stddvt(self, avg);
-	auto begin = begin_lower_triangle(ret);
-	auto end = end_lower_triangle(ret);
+	auto begin = begin_square(ret);
+	auto end = end_square(ret);
 
-	// for (auto it = begin; it != end; it++) {
-	// 	*it = (*it - avg) / sd;
-	// }
-
-	for (size_t i = 0; i < ret.get_size(); i++) {
-		for (size_t j = 0; j < ret.get_size(); j++) {
-			ret.entry(i, j) = (ret.entry(i, j) - avg) / sd;
-		}
+	for (auto it = begin; it != end; it++) {
+		*it = (*it - avg) / sd;
 	}
 
 	return ret;
