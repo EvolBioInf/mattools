@@ -34,20 +34,16 @@
  */
 matrix grep(const matrix &self, const std::regex &rpattern, bool invert)
 {
-	auto size = self.get_size();
-	const auto &old_names = self.get_names();
-
-	auto indices = std::vector<matrix::size_type>(size);
-	std::iota(begin(indices), end(indices), size_t(0));
+	auto names = self.get_names();
 
 	// remove all names that do not match the pattern
-	auto split = std::remove_if(
-		begin(indices), end(indices), [&](matrix::size_type index) {
-			return !std::regex_search(old_names[index], rpattern) ^ invert;
+	auto split =
+		std::remove_if(begin(names), end(names), [&](std::string &name) {
+			return !std::regex_search(name, rpattern) ^ invert;
 		});
 
 	// get the submatrix, so only the matching names and values remain
-	return sample(self, begin(indices), split);
+	return sample2(self, begin(names), split);
 }
 
 static void mat_grep_usage(int status);
@@ -79,15 +75,16 @@ int mat_grep(int argc, char **argv)
 		int option_index = 0;
 		int c = getopt_long(argc, argv, "f:hv", long_options, &option_index);
 
-		if (c == -1) break;
+		if (c == -1)
+			break;
 		else if (c == 'f') {
 			file_names.push_back(optarg);
-		}
-		else if (c == 'h') mat_grep_usage(EXIT_SUCCESS);
+		} else if (c == 'h')
+			mat_grep_usage(EXIT_SUCCESS);
 		else if (c == 'v') {
 			invert = true;
-		}
-		else mat_grep_usage(EXIT_FAILURE);
+		} else
+			mat_grep_usage(EXIT_FAILURE);
 	}
 
 	argc -= optind, argv += optind;
