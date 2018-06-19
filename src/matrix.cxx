@@ -294,4 +294,3 @@ std::vector<matrix> parse_all(std::vector<std::string> file_names)
 
 	return matrices;
 }
-

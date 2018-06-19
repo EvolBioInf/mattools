@@ -20,6 +20,7 @@
 #include <regex>
 #include <string>
 #include <unistd.h>
+#include <unordered_map>
 #include <vector>
 // #include <optional>
 
@@ -29,12 +30,25 @@ class matrix
 	using size_type = size_t;
 
   protected:
+	template <typename T>
+	auto make_index_map(const std::vector<T> &container)
+		-> std::unordered_map<T, size_type>
+	{
+		auto ret = std::unordered_map<T, size_type>{};
+		ret.reserve(container.size());
+		for (size_type i = 0; i < container.size(); ++i) {
+			ret[container[i]] = i;
+		}
+		return ret;
+	}
 	/// The size of the matrix
 	size_type size = 0;
 	/// A list of names (of sequences)
 	std::vector<std::string> names = {};
 	/// The matrix itself
 	std::vector<double> values = {};
+
+	std::unordered_map<std::string, size_t> name_map{};
 
 	bool m_has_coverages = false;
 	std::vector<double> coverages = {};
@@ -51,7 +65,8 @@ class matrix
 	 */
 	matrix(std::vector<std::string> _names, std::vector<double> _values)
 		: size{_names.size()}, names{std::move(_names)},
-		  values{std::move(_values)}, m_has_coverages{false}, coverages{}
+		  values{std::move(_values)}, name_map{make_index_map(names)},
+		  m_has_coverages{false}, coverages{}
 
 	{
 		assert(size == names.size());
@@ -60,14 +75,24 @@ class matrix
 
 	matrix(std::vector<std::string> _names, std::vector<double> _values,
 		   std::vector<double> _coverages)
-		: size{_names.size()}, names{std::move(_names)}, values{std::move(
-															 _values)},
+		: size{_names.size()}, names{std::move(_names)},
+		  values{std::move(_values)}, name_map{make_index_map(names)},
 		  m_has_coverages{true}, coverages{std::move(_coverages)}
 
 	{
 		assert(size == names.size());
 		assert(size * size == values.size());
 		assert(size * size == coverages.size());
+	}
+
+	double &entry(const std::string &ni, const std::string &nj)
+	{
+		return entry(name_map.at(ni), name_map.at(nj));
+	}
+
+	const double &entry(const std::string &ni, const std::string &nj) const
+	{
+		return entry(name_map.at(ni), name_map.at(nj));
 	}
 
 	/** @brief Access an entry by coordinates.
@@ -218,6 +243,27 @@ matrix sample(const matrix &self, InputIt first, InputIt last)
 			auto old_jk = *jk;
 			auto new_jk = distance(first, jk);
 			ret.entry(new_it, new_jk) = self.entry(old_it, old_jk);
+		}
+	}
+
+	return ret;
+}
+
+template <typename InputIt>
+matrix sample2(const matrix &self, const InputIt first, const InputIt last)
+{
+	auto new_size = distance(first, last);
+	auto new_names = std::vector<std::string>(first, last);
+
+	auto new_values = std::vector<double>(new_size * new_size);
+	auto ret = matrix{new_names, new_values};
+
+	// Copy and rearrange the values
+	for (auto it = first; it != last; it++) {
+		auto name1 = *it;
+		for (auto jk = first; jk != last; jk++) {
+			auto name2 = *jk;
+			ret.entry(name1, name2) = self.entry(name1, name2);
 		}
 	}
 
