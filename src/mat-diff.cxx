@@ -61,7 +61,6 @@ matrix diff(const matrix &self, const matrix &other)
 			auto name2 = common_names[j];
 			auto d1 = self.entry(this_map[name1], this_map[name2]);
 			auto d2 = other.entry(other_map[name1], other_map[name2]);
-			// std::cerr << name1 << "\t" << name2 << "\t" << d1 - d2 << std::endl;
 			ret.entry(i, j) = ret.entry(j, i) = d1 - d2;
 		}
 	}
@@ -81,8 +80,8 @@ static void mat_diff_usage(int status);
 int mat_diff(int argc, char **argv)
 {
 	static struct option long_options[] = {
-		{"help", no_argument, 0, 0},   // print help
-		{0, 0, 0, 0}				   //
+		{"help", no_argument, 0, 0}, // print help
+		{0, 0, 0, 0}				 //
 	};
 
 	bool full_matrix = false;
