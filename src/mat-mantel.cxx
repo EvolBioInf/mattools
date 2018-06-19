@@ -276,7 +276,7 @@ double Z(const matrix &self, const matrix &other)
 	return dist;
 }
 
-double mantel(const matrix &self, const matrix &other)
+double mantel(const matrix &self, const matrix &other, bool donormalize)
 {
 
 	auto self_names = self.get_names();
@@ -292,8 +292,12 @@ double mantel(const matrix &self, const matrix &other)
 
 	auto new_self = sample2(self, common_names.begin(), common_names.end());
 	auto new_other = sample2(other, common_names.begin(), common_names.end());
-	new_self = normalize(new_self);
-	new_other = normalize(new_other);
+
+	if (donormalize) {
+		new_self = normalize(new_self);
+		new_other = normalize(new_other);
+	}
+
 	auto orig = Z(new_self, new_other);
 	std::cerr << "orig: " << orig << std::endl;
 
@@ -304,7 +308,7 @@ double mantel(const matrix &self, const matrix &other)
 	std::random_device rd{};
 	std::mt19937 g(rd());
 
-	for (size_t runs = 0; runs < 10000; runs++) {
+	for (size_t runs = 0; runs < 100000; runs++) {
 		std::shuffle(begin(indices), end(indices), g);
 		// randomize
 		double dist = 0;
@@ -341,14 +345,16 @@ int mat_mantel(int argc, char **argv)
 	static struct option long_options[] = {
 		{"help", no_argument, 0, 0},   // print help
 		{"full", no_argument, 0, 'f'}, // full matrix
-		{0, 0, 0, 0}				   //
+		{"normalize", no_argument, 0, 'n'},
+		{0, 0, 0, 0} //
 	};
 
 	bool full_matrix = false;
+	bool donormalize = false;
 
 	while (true) {
 		int long_index;
-		int c = getopt_long(argc, argv, "f", long_options, &long_index);
+		int c = getopt_long(argc, argv, "fn", long_options, &long_index);
 
 		if (c == -1) {
 			break;
@@ -364,6 +370,7 @@ int mat_mantel(int argc, char **argv)
 				break;
 			}
 			case 'f': full_matrix = true; break;
+			case 'n': donormalize = true; break;
 			default: /* intentional fall-through */
 			case '?': mat_mantel_usage(EXIT_FAILURE);
 		}
@@ -378,7 +385,7 @@ int mat_mantel(int argc, char **argv)
 	}
 
 	if (!full_matrix) {
-		std::cout << mantel(matrices[0], matrices[1]) << std::endl;
+		std::cout << mantel(matrices[0], matrices[1], donormalize) << std::endl;
 	} else {
 		// compute a full distance matrix
 		auto size = matrices.size();
@@ -396,7 +403,7 @@ int mat_mantel(int argc, char **argv)
 			for (size_t j = 0; j < size; j++) {
 				if (i == j) continue;
 				cmpmat.entry(i, j) = cmpmat.entry(j, i) =
-					mantel(matrices[i], matrices[j]);
+					mantel(matrices[i], matrices[j], donormalize);
 			}
 		}
 
