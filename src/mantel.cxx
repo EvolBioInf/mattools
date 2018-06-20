@@ -18,6 +18,7 @@
 #include <err.h>
 #include <getopt.h>
 #include <iostream>
+#include <iterator>
 #include <random>
 #include <string>
 #include <type_traits>
@@ -100,7 +101,9 @@ double Z(const matrix &self, const matrix &other)
 
 double mantel(const matrix &self, const matrix &other, bool donormalize)
 {
-	auto names = common_names(self.get_names(), other.get_names());
+	using std::begin;
+	using std::end;
+	auto new_names = common_names(self.get_names(), other.get_names());
 
 	auto size = new_names.size();
 	auto new_self = sample2(self, new_names.begin(), new_names.end());
