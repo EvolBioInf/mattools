@@ -15,3 +15,4 @@ IncludeCategories:
   - Regex:           '^"'
     Priority:        3
 # IncludeIsMainRegex: 'derp$'
+AlwaysBreakTemplateDeclarations: true

@@ -13,6 +13,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#pragma once
+
 #include <cassert>
 #include <err.h>
 #include <fstream>
@@ -64,9 +67,9 @@ class matrix
 	 * @returns the new matrix
 	 */
 	matrix(std::vector<std::string> _names, std::vector<double> _values)
-		: size{_names.size()}, names{std::move(_names)},
-		  values{std::move(_values)}, name_map{make_index_map(names)},
-		  m_has_coverages{false}, coverages{}
+		: size{_names.size()}, names{std::move(_names)}, values{std::move(
+															 _values)},
+		  name_map{make_index_map(names)}, m_has_coverages{false}, coverages{}
 
 	{
 		assert(size == names.size());
@@ -207,50 +210,17 @@ class matrix
 	std::string to_string() const;
 };
 
-/** @brief Sample a distance matrix. Only the names referenced by index via the
- * given range are included in the new submatrix. The implied order of names
- * from the index list is preserved.
+/** @brief Sample a distance matrix. Only the names given by the input list are
+ * included in the new submatrix. The implied order of names from the index list
+ * is preserved.
  *
  * @param self - The matrix to sample.
- * @param first - An iterator to a list of indices.
- * @param last - An iterator past the list of indices.
- * @returns a new matrix with only the names specified in the index list.
+ * @param first - An iterator to a list of names.
+ * @param last - An iterator past the list of names.
+ * @returns a new matrix with only the names specified in the list.
  */
-template <typename InputIt>
-matrix sample(const matrix &self, InputIt first, InputIt last)
-{
-	auto new_size = distance(first, last);
-
-	const auto &self_names = self.get_names();
-	auto new_names = std::vector<std::string>();
-	auto inserter = std::back_inserter(new_names);
-	new_names.reserve(new_size);
-
-	// The new names consists of only those given in the index list
-	std::transform(first, last, inserter,
-				   [&self_names](matrix::size_type index) {
-					   return self_names.at(index);
-				   });
-
-	auto new_values = std::vector<double>(new_size * new_size);
-	auto ret = matrix{new_names, new_values};
-
-	// Copy and rearrange the values
-	for (auto it = first; it != last; it++) {
-		auto old_it = *it;
-		auto new_it = distance(first, it);
-		for (auto jk = first; jk != last; jk++) {
-			auto old_jk = *jk;
-			auto new_jk = distance(first, jk);
-			ret.entry(new_it, new_jk) = self.entry(old_it, old_jk);
-		}
-	}
-
-	return ret;
-}
-
-template <typename InputIt>
-matrix sample2(const matrix &self, const InputIt first, const InputIt last)
+template <typename ForwardIt>
+matrix sample2(const matrix &self, const ForwardIt first, const ForwardIt last)
 {
 	auto new_size = distance(first, last);
 	auto new_names = std::vector<std::string>(first, last);
@@ -274,3 +244,237 @@ matrix sample2(const matrix &self, const InputIt first, const InputIt last)
 std::vector<matrix> parse_all(const char *const *);
 std::vector<matrix> parse_all(std::vector<std::string> file_names);
 std::string format(const matrix &, char, const char *, bool);
+
+class square_iterator_helper
+{
+  public:
+	using size_type = matrix::size_type;
+	size_type row = 0;
+	size_type col = 0;
+	size_type size = 0;
+
+	void next()
+	{
+		col++;
+		if (col >= size) {
+			col = 0;
+			row++;
+		}
+	}
+
+	void prev()
+	{
+		if (col > 0) {
+			col--;
+		} else {
+			row--;
+			col = size;
+		}
+	}
+
+	static square_iterator_helper begin(size_type size)
+	{
+		return square_iterator_helper(0, 0, size);
+	}
+
+	static square_iterator_helper end(size_type size)
+	{
+		return square_iterator_helper(size, 0, size);
+	}
+
+  public:
+	square_iterator_helper();
+	square_iterator_helper(size_type _row, size_type _col, size_type _size)
+		: row(_row), col(_col), size(_size){};
+};
+
+class ltriangle_iterator_helper
+{
+  public:
+	using size_type = matrix::size_type;
+	size_type row = 0;
+	size_type col = 0;
+	size_type size = 0;
+
+	void next()
+	{
+		col++;
+		if (col >= row) {
+			col = 0;
+			row++;
+		}
+	}
+
+	void prev()
+	{
+		if (col > 0) {
+			col--;
+		} else {
+			row--;
+			col = row - 1;
+		}
+	}
+
+	static ltriangle_iterator_helper begin(size_type size)
+	{
+		return ltriangle_iterator_helper(1, 0, size);
+	}
+
+	static ltriangle_iterator_helper end(size_type size)
+	{
+		return ltriangle_iterator_helper(size, 0, size);
+	}
+
+  public:
+	ltriangle_iterator_helper();
+	ltriangle_iterator_helper(size_type _row, size_type _col, size_type _size)
+		: row(_row), col(_col), size(_size){};
+};
+
+template <class Matrix, class Helper>
+class matrix_iterator
+{
+  private:
+	using my_double = typename std::conditional<std::is_const<Matrix>::value,
+												const double, double>::type;
+
+  public:
+	using my_type = matrix_iterator<Matrix, Helper>;
+	using matrix_type = Matrix;
+	using size_type = matrix::size_type;
+	using value_type = double;
+	using reference = my_double &;
+	using pointer = my_double *;
+
+	using iterator_category = std::bidirectional_iterator_tag;
+	using difference_type = ssize_t;
+
+  private:
+	matrix_type *data = nullptr;
+	Helper helper = {};
+
+	matrix_iterator(matrix_type &_data, Helper start)
+		: data(&_data), helper(std::move(start))
+	{
+	}
+
+	reference value() const
+	{
+		return data->entry(helper.row, helper.col);
+	}
+
+	void next()
+	{
+		helper.next();
+	}
+
+	void prev()
+	{
+		helper.prev();
+	}
+
+  public:
+	matrix_iterator(){};
+
+	reference operator*() const
+	{
+		return value();
+	}
+
+	auto &operator++()
+	{
+		next();
+		return *this;
+	}
+
+	auto operator++(int)
+	{
+		auto ret = *this;
+		next();
+		return ret;
+	}
+
+	auto &operator--()
+	{
+		prev();
+		return *this;
+	}
+
+	auto operator--(int)
+	{
+		auto ret = *this;
+		prev();
+		return ret;
+	}
+
+	bool operator==(my_type other) const
+	{
+		return data == other.data && helper.row == other.helper.row &&
+			   helper.col == other.helper.col;
+	}
+
+	bool operator!=(my_type other) const
+	{
+		return !(*this == other);
+	}
+
+	bool operator<(my_type other) const
+	{
+		if (helper.row < other.helper.row) {
+			return true;
+		} else if (helper.row == other.helper.row) {
+			return helper.col < other.helper.col;
+		} else {
+			return false;
+		}
+	}
+
+	static auto begin(matrix_type &self)
+	{
+		return my_type(self, Helper::begin(self.get_size()));
+	}
+
+	static auto end(matrix_type &self)
+	{
+		return my_type(self, Helper::end(self.get_size()));
+	}
+};
+
+template <typename T>
+auto begin_square(T &self)
+{
+	return matrix_iterator<T, square_iterator_helper>::begin(self);
+}
+
+template <typename T>
+auto end_square(T &self)
+{
+	return matrix_iterator<T, square_iterator_helper>::end(self);
+}
+
+template <typename T>
+auto begin_lower_triangle(T &self)
+{
+	return matrix_iterator<T, ltriangle_iterator_helper>::begin(self);
+}
+
+template <typename T>
+auto end_lower_triangle(T &self)
+{
+	return matrix_iterator<T, ltriangle_iterator_helper>::end(self);
+}
+
+inline std::vector<std::string>
+common_names(std::vector<std::string> self_names,
+			 std::vector<std::string> other_names)
+{
+	auto ret = std::vector<std::string>{};
+
+	std::sort(self_names.begin(), self_names.end());
+	std::sort(other_names.begin(), other_names.end());
+	std::set_intersection(self_names.begin(), self_names.end(),
+						  other_names.begin(), other_names.end(),
+						  std::back_inserter(ret));
+
+	return ret;
+}

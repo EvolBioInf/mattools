@@ -42,15 +42,13 @@ class tree_node
 	}
 
 	tree_node(tree_node *lb, tree_node *rb, double ld, double rd) noexcept
-		: left_branch{lb},
-		  right_branch{rb},
-		  left_dist{ld},
-		  right_dist{rd},
-		  index{-1}
+		: left_branch{lb}, right_branch{rb}, left_dist{ld},
+		  right_dist{rd}, index{-1}
 	{
 	}
 
-	template <typename Func> void traverse(const Func &process)
+	template <typename Func>
+	void traverse(const Func &process)
 	{
 		if (left_branch) {
 			left_branch->traverse(process);
@@ -92,9 +90,8 @@ class tree_root : public tree_node
 
 	tree_root() = default;
 	tree_root(tree_node *lb, tree_node *rb, tree_node *eb, double ld, double rd,
-			  double ed) noexcept : tree_node(lb, rb, ld, rd),
-									extra_branch{eb},
-									extra_dist{ed}
+			  double ed) noexcept
+		: tree_node(lb, rb, ld, rd), extra_branch{eb}, extra_dist{ed}
 	{
 	}
 };
@@ -321,7 +318,7 @@ void colorize(tree_node *self, std::vector<uint8_t> &buffer, uint8_t color)
 {
 	if (!self) return;
 
-	self->traverse([ color = color, &buffer ](const tree_node *self) {
+	self->traverse([color = color, &buffer](const tree_node *self) {
 		if (self->left_branch == nullptr) {
 			buffer[self->index] = color;
 		}

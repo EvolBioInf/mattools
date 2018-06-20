@@ -109,6 +109,38 @@ double p2_norm(const matrix &self, const matrix &other)
 	return std::sqrt(dist / n);
 }
 
+double rel(const matrix &self, const matrix &other)
+{
+	auto this_map = make_index_map(self.get_names());
+	auto other_map = make_index_map(other.get_names());
+
+	auto common_names = std::vector<std::string>{};
+	for (const auto &name : self.get_names()) {
+		if (other_map.find(name) != other_map.end()) {
+			common_names.push_back(name);
+		}
+	}
+
+	double dist = 0;
+
+	for (size_t i = 0; i < common_names.size() - 1; i++) {
+		auto name1 = common_names[i];
+		for (size_t j = i + 1; j < common_names.size(); j++) {
+			auto name2 = common_names[j];
+			auto d1 = self.entry(this_map[name1], this_map[name2]);
+			auto d2 = other.entry(other_map[name1], other_map[name2]);
+			auto d = 2 * (d1 - d2);
+			auto f = d1 + d2;
+			// std::cerr << std::abs(d / f) << std::endl;
+			dist += std::abs(d / f);
+		}
+	}
+
+	auto n = common_names.size() * (common_names.size() - 1) / 2;
+
+	return dist / n;
+}
+
 static void mat_compare_usage(int status);
 
 /**
@@ -160,7 +192,7 @@ int mat_compare(int argc, char **argv)
 	}
 
 	if (!full_matrix) {
-		std::cout << p2_norm(matrices[0], matrices[1]) << std::endl;
+		std::cout << rel(matrices[0], matrices[1]) << std::endl;
 	} else {
 		// compute a full distance matrix
 		auto size = matrices.size();

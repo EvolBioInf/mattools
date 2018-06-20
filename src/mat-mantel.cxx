@@ -26,296 +26,6 @@
 
 #include "matrix.h"
 
-template <class T> class square_iterator
-{
-  public:
-	using my_type = square_iterator<T>;
-	using matrix_type = T;
-	using size_type = matrix::size_type;
-	using value_type = double;
-	using reference =
-		typename std::conditional<std::is_const<matrix_type>::value,
-								  const double &, double &>::type;
-	using pointer = typename std::conditional<std::is_const<matrix_type>::value,
-											  const double *, double *>::type;
-
-	using iterator_category = std::bidirectional_iterator_tag;
-	using difference_type = ssize_t;
-
-  private:
-	matrix_type *data = nullptr;
-	size_type row = 0;
-	size_type col = 0;
-
-	square_iterator(matrix_type &_data, size_type _row, size_type _col)
-		: data(&_data), row(_row), col(_col)
-	{
-	}
-
-	reference value() const
-	{
-		return data->entry(row, col);
-	}
-
-	void next()
-	{
-		col++;
-		if (col >= data->get_size()) {
-			col = 0;
-			row++;
-		}
-	}
-
-	void prev()
-	{
-		if (col > 0) {
-			col--;
-		} else {
-			row--;
-			col = data->get_size();
-		}
-	}
-
-  public:
-	square_iterator(){};
-
-	reference operator*() const
-	{
-		return value();
-	}
-
-	auto &operator++()
-	{
-		next();
-		return *this;
-	}
-
-	auto operator++(int)
-	{
-		auto ret = *this;
-		next();
-		return ret;
-	}
-
-	auto &operator--()
-	{
-		prev();
-		return *this;
-	}
-
-	auto operator--(int)
-	{
-		auto ret = *this;
-		prev();
-		return ret;
-	}
-
-	bool operator==(my_type other) const
-	{
-		return data == other.data && row == other.row && col == other.col;
-	}
-
-	bool operator!=(my_type other) const
-	{
-		return !(*this == other);
-	}
-
-	bool operator<(my_type other) const
-	{
-		if (row < other.row) {
-			return true;
-		} else if (row == other.row) {
-			return col < other.col;
-		} else {
-			return false;
-		}
-	}
-
-	static auto begin(matrix_type &self)
-	{
-		return my_type(self, 0, 0);
-	}
-
-	static auto end(matrix_type &self)
-	{
-		auto size = self.get_size();
-		return my_type(self, size, 0);
-	}
-};
-
-
-template <typename T> auto begin_square(T &self)
-{
-	return square_iterator<T>::begin(self);
-}
-
-template <typename T> auto end_square(T &self)
-{
-	return square_iterator<T>::end(self);
-}
-
-
-template <class T> class lower_tr_iterator
-{
-  public:
-	using my_type = lower_tr_iterator<T>;
-	using matrix_type = T;
-	using size_type = matrix::size_type;
-	using value_type = double;
-	using reference =
-		typename std::conditional<std::is_const<matrix_type>::value,
-								  const double &, double &>::type;
-	using pointer = typename std::conditional<std::is_const<matrix_type>::value,
-											  const double *, double *>::type;
-
-	using iterator_category = std::bidirectional_iterator_tag;
-	using difference_type = ssize_t;
-
-  private:
-	matrix_type *data = nullptr;
-	size_type row = 0;
-	size_type col = 0;
-
-	lower_tr_iterator(matrix_type &_data, size_type _row, size_type _col)
-		: data(&_data), row(_row), col(_col)
-	{
-	}
-
-	reference value() const
-	{
-		return data->entry(row, col);
-	}
-
-	void next()
-	{
-		col++;
-		if (col >= row) {
-			col = 0;
-			row++;
-		}
-	}
-
-	void prev()
-	{
-		if (col > 0) {
-			col--;
-		} else {
-			row--;
-			col = row - 1;
-		}
-	}
-
-  public:
-	lower_tr_iterator(){};
-
-	reference operator*() const
-	{
-		return value();
-	}
-
-	auto &operator++()
-	{
-		next();
-		return *this;
-	}
-
-	auto operator++(int)
-	{
-		auto ret = *this;
-		next();
-		return ret;
-	}
-
-	auto &operator--()
-	{
-		prev();
-		return *this;
-	}
-
-	auto operator--(int)
-	{
-		auto ret = *this;
-		prev();
-		return ret;
-	}
-
-	bool operator==(my_type other) const
-	{
-		return data == other.data && row == other.row && col == other.col;
-	}
-
-	bool operator!=(my_type other) const
-	{
-		return !(*this == other);
-	}
-
-	bool operator<(my_type other) const
-	{
-		if (row < other.row) {
-			return true;
-		} else if (row == other.row) {
-			return col < other.col;
-		} else {
-			return false;
-		}
-	}
-
-	static auto begin(matrix_type &self)
-	{
-		return my_type(self, 1, 0);
-	}
-
-	static auto end(matrix_type &self)
-	{
-		auto size = self.get_size();
-		return my_type(self, size, 0);
-	}
-};
-
-template <typename T> auto begin_lower_triangle(T &self)
-{
-	return lower_tr_iterator<T>::begin(self);
-}
-
-template <typename T> auto end_lower_triangle(T &self)
-{
-	return lower_tr_iterator<T>::end(self);
-}
-
-/**
- * @brief A vector maps an index to a value. Invert this relation.
- *
- * @returns An unordered map with inverse relationship.
- */
-template <typename T>
-auto make_index_map(const std::vector<T> &container)
-	-> std::unordered_map<T, size_t>
-{
-	auto ret = std::unordered_map<T, size_t>{};
-	ret.reserve(container.size());
-	for (size_t i = 0; i < container.size(); ++i) {
-		ret[container[i]] = i;
-	}
-	return ret;
-}
-
-template <typename T>
-auto make_random_index_map(const std::vector<T> &container)
-	-> std::unordered_map<T, size_t>
-{
-	auto indices = std::vector<size_t>();
-	std::iota(begin(indices), end(indices), 0);
-	std::random_device rd{};
-	std::shuffle(begin(indices), end(indices), rd);
-
-	auto ret = std::unordered_map<T, size_t>{};
-	ret.reserve(container.size());
-	for (size_t i = 0; i < container.size(); ++i) {
-		ret[container[i]] = i;
-	}
-	return ret;
-}
-
 double lower_triangle_avg(const matrix &self)
 {
 	double ret = 0;
@@ -363,33 +73,22 @@ matrix normalize(const matrix &self)
 	auto begin = begin_square(ret);
 	auto end = end_square(ret);
 
-	for (auto it = begin; it != end; it++) {
-		*it = (*it - avg) / sd;
-	}
+	std::transform(begin, end, begin,
+				   [=](double value) { return (value - avg) / sd; });
 
 	return ret;
 }
 
 double Z(const matrix &self, const matrix &other)
 {
-	const auto &self_names = self.get_names();
-	auto self_map = make_index_map(self_names);
-	auto other_map = make_index_map(other.get_names());
-
-	// compute the intersection of names
-	auto common_names = std::vector<std::string>{};
-	for (const auto &name : self_names) {
-		if (other_map.find(name) != other_map.end()) {
-			common_names.push_back(name);
-		}
-	}
+	auto names = common_names(self.get_names(), other.get_names());
 
 	double dist = 0;
 
-	for (size_t i = 0; i < common_names.size() - 1; i++) {
-		const auto &name1 = common_names[i];
-		for (size_t j = i + 1; j < common_names.size(); j++) {
-			const auto &name2 = common_names[j];
+	for (size_t i = 0; i < names.size() - 1; i++) {
+		const auto &name1 = names[i];
+		for (size_t j = i + 1; j < names.size(); j++) {
+			const auto &name2 = names[j];
 			auto d1 = self.entry(name1, name2);
 			auto d2 = other.entry(name1, name2);
 			dist += d1 * d2;
@@ -401,20 +100,11 @@ double Z(const matrix &self, const matrix &other)
 
 double mantel(const matrix &self, const matrix &other, bool donormalize)
 {
+	auto names = common_names(self.get_names(), other.get_names());
 
-	auto self_names = self.get_names();
-	auto other_names = other.get_names();
-	std::sort(begin(self_names), end(self_names));
-	std::sort(begin(other_names), end(other_names));
-	auto common_names = std::vector<std::string>{};
-	std::set_intersection(begin(self_names), end(self_names),
-						  begin(other_names), end(other_names),
-						  std::back_inserter(common_names));
-
-	auto size = common_names.size();
-
-	auto new_self = sample2(self, common_names.begin(), common_names.end());
-	auto new_other = sample2(other, common_names.begin(), common_names.end());
+	auto size = new_names.size();
+	auto new_self = sample2(self, new_names.begin(), new_names.end());
+	auto new_other = sample2(other, new_names.begin(), new_names.end());
 
 	if (donormalize) {
 		new_self = normalize(new_self);
