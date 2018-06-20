@@ -23,46 +23,21 @@
 #include <vector>
 #include "matrix.h"
 
-/**
- * @brief A vector maps an index to a value. Invert this relation.
- *
- * @returns An unordered map with inverse relationship.
- */
-template <typename T>
-auto make_index_map(const std::vector<T> &container)
-	-> std::unordered_map<T, size_t>
-{
-	auto ret = std::unordered_map<T, size_t>{};
-	ret.reserve(container.size());
-	for (size_t i = 0; i < container.size(); ++i) {
-		ret[container[i]] = i;
-	}
-	return ret;
-}
 
 matrix diff(const matrix &self, const matrix &other)
 {
-	auto this_map = make_index_map(self.get_names());
-	auto other_map = make_index_map(other.get_names());
+	auto new_names = common_names(self.get_names(), other.get_names());
+	auto new_self = sample2(self, new_names.begin(), new_names.end());
+	auto new_other = sample2(other, new_names.begin(), new_names.end());
 
-	auto common_names = std::vector<std::string>{};
-	for (const auto &name : self.get_names()) {
-		if (other_map.find(name) != other_map.end()) {
-			common_names.push_back(name);
-		}
-	}
+	auto size = new_names.size();
+	auto ret = matrix(new_names, std::vector<double>(size * size));
 
-	auto size = common_names.size();
-	auto ret = matrix(common_names, std::vector<double>(size * size));
+	auto self_it = begin_square(new_self);
+	auto other_it = begin_square(new_other);
 
-	for (size_t i = 0; i < common_names.size() - 1; i++) {
-		auto name1 = common_names[i];
-		for (size_t j = i + 1; j < common_names.size(); j++) {
-			auto name2 = common_names[j];
-			auto d1 = self.entry(this_map[name1], this_map[name2]);
-			auto d2 = other.entry(other_map[name1], other_map[name2]);
-			ret.entry(i, j) = ret.entry(j, i) = d1 - d2;
-		}
+	for (auto it = begin_square(ret); it != end_square(ret); it++) {
+		*it = *self_it++ - *other_it++;
 	}
 
 	return ret;
