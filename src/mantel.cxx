@@ -27,6 +27,16 @@
 
 #include "matrix.h"
 
+template<class T = std::mt19937, std::size_t N = T::state_size>
+auto ProperlySeededRandomEngine () -> typename std::enable_if<!!N, T>::type {
+    typename T::result_type random_data[N];
+    std::random_device source;
+    std::generate(std::begin(random_data), std::end(random_data), std::ref(source));
+    std::seed_seq seeds(std::begin(random_data), std::end(random_data));
+    T seededEngine (seeds);
+    return seededEngine;
+}
+
 double lower_triangle_avg(const matrix &self)
 {
 	double ret = 0;
@@ -99,6 +109,27 @@ double Z(const matrix &self, const matrix &other)
 	return dist;
 }
 
+double rmsd(const matrix &self, const matrix &other)
+{
+	const auto& names = self.get_names();
+
+	double dist = 0;
+
+	for (size_t i = 0; i < names.size() - 1; i++) {
+		const auto &name1 = names[i];
+		for (size_t j = i + 1; j < names.size(); j++) {
+			const auto &name2 = names[j];
+			auto d1 = self.entry(name1, name2);
+			auto d2 = other.entry(name1, name2);
+			auto t = d1 - d2;
+			dist += t * t;
+		}
+	}
+
+	auto count = names.size() * (names.size() - 1) / 2.0;
+	return std::sqrt(dist / count);
+}
+
 double mantel(const matrix &self, const matrix &other, bool donormalize)
 {
 	using std::begin;
@@ -114,15 +145,16 @@ double mantel(const matrix &self, const matrix &other, bool donormalize)
 		new_other = normalize(new_other);
 	}
 
-	auto orig = Z(new_self, new_other);
-	std::cerr << "orig: " << orig << std::endl;
+	auto orig = rmsd(new_self, new_other);
+	std::cout << "orig: " << orig << std::endl;
 
 	auto montecarlo = std::vector<double>();
 	auto indices = std::vector<size_t>(size);
 	std::iota(begin(indices), end(indices), 0);
 
-	std::random_device rd{};
-	std::mt19937 g(rd());
+	auto g = ProperlySeededRandomEngine();
+
+	auto count = size * (size - 1) / 2.0;
 
 	for (size_t runs = 0; runs < 100000; runs++) {
 		std::shuffle(begin(indices), end(indices), g);
@@ -133,12 +165,13 @@ double mantel(const matrix &self, const matrix &other, bool donormalize)
 			for (size_t j = i + 1; j < size; j++) {
 				auto d1 = new_self.entry(i, j);
 				auto d2 = new_other.entry(indices[i], indices[j]);
-				dist += d1 * d2;
+				auto t = d1 - d2;
+				dist += t * t;
 			}
 		}
 
-		std::cerr << "Z: " << dist << std::endl;
-		montecarlo.push_back(dist);
+		std::cerr << "Z: " << std::sqrt(dist / count) << std::endl;
+		montecarlo.push_back(std::sqrt(dist / count));
 	}
 
 	std::sort(begin(montecarlo), end(montecarlo));
