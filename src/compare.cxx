@@ -143,7 +143,7 @@ int mat_compare(int argc, char **argv)
 	}
 
 	if (!full_matrix) {
-		std::cout << rel(matrices[0], matrices[1]) << std::endl;
+		std::cout << p2_norm(matrices[0], matrices[1]) << std::endl;
 	} else {
 		// compute a full distance matrix
 		auto size = matrices.size();
