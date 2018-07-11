@@ -260,8 +260,9 @@ std::vector<matrix> parse_all(const char *const *argv)
  * @param argv - argv
  * @returns a list of matrices
  */
-std::vector<matrix> parse_all(std::vector<std::string> file_names)
+std::vector<matrix> parse_all(const std::vector<std::string>& argv_file_names)
 {
+	auto file_names = argv_file_names;
 	if (file_names.empty()) {
 		// warn on reading from stdin
 		if (isatty(STDIN_FILENO) != 0) {
@@ -281,3 +282,15 @@ std::vector<matrix> parse_all(std::vector<std::string> file_names)
 
 	return matrices;
 }
+
+
+std::vector<matrix> parse(const std::string& file_name)
+{
+	auto matrices = std::vector<matrix>();
+	auto inserter = std::back_inserter(matrices);
+
+	parse_tolerant(file_name, inserter);
+
+	return matrices;
+}
+

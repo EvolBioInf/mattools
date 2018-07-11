@@ -105,67 +105,41 @@ int mat_compare(int argc, char **argv)
 {
 	static struct option long_options[] = {
 		{"help", no_argument, 0, 0},   // print help
-		{"full", no_argument, 0, 'f'}, // full matrix
 		{0, 0, 0, 0}				   //
 	};
 
-	bool full_matrix = false;
-
 	while (true) {
 		int long_index;
-		int c = getopt_long(argc, argv, "f", long_options, &long_index);
+		int c = getopt_long(argc, argv, "", long_options, &long_index);
 
 		if (c == -1) {
 			break;
 		}
 
-		switch (c) {
-			case 0: // long option
-			{
-				auto option_string = std::string(long_options[long_index].name);
-				if (option_string == "help") {
-					mat_compare_usage(EXIT_SUCCESS);
-				}
-				break;
+		if (c == 0) { // long option
+			auto option_string = std::string(long_options[long_index].name);
+			if (option_string == "help") {
+				mat_compare_usage(EXIT_SUCCESS);
 			}
-			case 'f': full_matrix = true; break;
-			default: /* intentional fall-through */
-			case '?': mat_compare_usage(EXIT_FAILURE);
+		} else {
+			mat_compare_usage(EXIT_FAILURE);
 		}
 	}
 
 	argc -= optind, argv += optind; // hack
 
-	auto matrices = parse_all(argv);
+	if (argc < 2) errx(1, "too few arguments");
 
-	if (matrices.size() < 2) {
-		errx(1, "At least two matrices must be provided.");
-	}
+	auto first_file_name = std::string(argv[0]);
+	auto second_file_name = std::string(argv[1]);
 
-	if (!full_matrix) {
-		std::cout << p2_norm(matrices[0], matrices[1]) << std::endl;
-	} else {
-		// compute a full distance matrix
-		auto size = matrices.size();
-		auto names = std::vector<std::string>();
-		auto values = std::vector<double>(size * size);
-		names.reserve(size);
+	auto first_matrices = parse(first_file_name);
+	auto second_matrices = parse(second_file_name);
 
-		// come up with a new name for each matrix
-		for (size_t i = 1; i <= size; i++) {
-			names.push_back(std::string("M") + std::to_string(i));
-		}
-
-		auto cmpmat = matrix{names, values};
-		for (size_t i = 0; i < size; i++) {
-			for (size_t j = 0; j < size; j++) {
-				if (i == j) continue;
-				cmpmat.entry(i, j) = cmpmat.entry(j, i) =
-					p2_norm(matrices[i], matrices[j]);
-			}
-		}
-
-		std::cout << cmpmat.to_string();
+	// check first and second matrices
+	auto count = std::min(first_matrices.size(), second_matrices.size());
+	for (size_t i = 0; i < count; i++) {
+		std::cout << p2_norm(first_matrices[i], second_matrices[i]) << std::endl;
 	}
 
 	return 0;
@@ -174,10 +148,9 @@ int mat_compare(int argc, char **argv)
 static void mat_compare_usage(int status)
 {
 	static const char str[] = {
-		"usage: mat compare [OPTIONS] [FILE...]\n" // this comment is a hack
-		"Compute euclidean distance of two distances matrices.\n\n"
+		"usage: mat compare [OPTIONS] FILE1 FILE2\n" // this comment is a hack
+		"Compute euclidean distance of distances matrices from two files.\n\n"
 		"Available options:\n"
-		" -f, --full          output a full distance matrix\n"
 		"     --help          print this help\n"};
 
 	fprintf(status == EXIT_SUCCESS ? stdout : stderr, str);
