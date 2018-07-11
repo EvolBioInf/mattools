@@ -19,11 +19,6 @@
 #include <errno.h>
 #include <fstream>
 #include <iostream>
-#include <tuple>
-#include <vector>
-// #include <boost/config/warning_disable.hpp>
-#include <boost/spirit/home/x3.hpp>
-#include <boost/spirit/include/support_istream_iterator.hpp>
 
 /**
  * @brief Print the given matrix into a string. Allows for modified formatting.
@@ -79,36 +74,50 @@ std::string matrix::to_string() const
 /** @brief Read a single "line" from a distance matrix.
  *
  * @param file_name - The current file, for error messages.
+ * @param input - The stream to read from.
  * @param max_values - Read at most this many values.
  *
  * @returns a pair, with the name in the first component, followed by the
  * values.
  */
-template <typename ForwardIt>
-auto parse_line_spirit(const std::string &file_name, ForwardIt &first,
-					   ForwardIt &last, size_t max_values)
+auto parse_line(const std::string &file_name, std::istream *input,
+				size_t max_values)
 {
-	using namespace boost::spirit::x3;
-
 	auto name = std::string{};
 	auto values = std::vector<double>{};
-	values.reserve(max_values);
 
-	auto set_name = [&](const auto &ctx) { name = _attr(ctx); };
-	auto push_back = [&](const auto &ctx) {
-		values.push_back(_attr(ctx));
-		_pass(ctx) = values.size() <= max_values;
-	};
+	*input >> name;
+	if (input->fail()) {
+		err(errno, "%s: error reading name", file_name.c_str());
+	}
 
-	const auto name_rule = lexeme[+graph][set_name] >> omit[*blank];
-	const auto values_rule = double_[push_back] % *blank;
-	const auto line_rule = name_rule >> -values_rule >> omit[eol];
+	while (max_values-- > 0) {
+		auto str = std::string();
+		auto value = 0.0;
 
-	bool r = parse(first, last, line_rule);
+		*input >> str;
+		try {
+			value = std::stod(str); // also parses nan
+		} catch (std::exception &e) {
+			/* If error is recoverable, reset. This happens when we read past
+			 * the end of a line and tried to interpret the next name as a value
+			 * instead.
+			 */
+			if (input->fail()) {
+				input->clear();
+			}
 
-	if (!r) {
-		errx(1, "%s: parse error", file_name.c_str());
-		std::terminate();
+			input->putback(' ');
+			// not a double, probably a name. push back
+			for (auto it = str.crbegin(); it != str.crend(); it++) {
+				input->putback(*it);
+			}
+
+			input->putback(' ');
+			break; // out of the loop
+		}
+
+		values.push_back(value);
 	}
 
 	return std::make_pair(name, values);
@@ -141,15 +150,17 @@ auto parse_line_spirit(const std::string &file_name, ForwardIt &first,
  * @param input - The input stream to read from
  * @returns The matrix
  */
-template <typename InputIt>
-matrix parse_tolerant_internal(const std::string &file_name, InputIt &first,
-							   InputIt &last)
+matrix parse_tolerant_internal(const std::string &file_name,
+							   std::istream *input)
 {
-	using namespace boost::spirit::x3;
-
 	size_t size;
-	const auto size_rule = long_;
-	bool r = parse(first, last, size_rule >> eol, size);
+	*input >> size;
+	if (!*input) {
+		if (input->fail() && !input->bad()) {
+			errx(1, "%s: error reading size", file_name.c_str());
+		}
+		err(errno, "%s: error reading size", file_name.c_str());
+	}
 
 	if (size == 0) {
 		errx(1, "%s: matrix of size 0", file_name.c_str());
@@ -162,7 +173,7 @@ matrix parse_tolerant_internal(const std::string &file_name, InputIt &first,
 	}
 
 	auto names = std::vector<std::string>{};
-	auto values = std::vector<double>(size * size);
+	auto mat = std::vector<double>(size * size);
 	names.reserve(size);
 
 	/* The first line is special. We can use it to determine whether the input
@@ -170,7 +181,7 @@ matrix parse_tolerant_internal(const std::string &file_name, InputIt &first,
 
 	auto lower_triangle = false;  // true iff given format is lower triangular
 	auto diagonal_values = false; // true iff diagonal values are included
-	auto first_line = parse_line_spirit(file_name, first, last, size);
+	auto first_line = parse_line(file_name, input, size);
 	if (first_line.second.size() < size) {
 		// assume lower triangle
 		lower_triangle = true;
@@ -180,22 +191,21 @@ matrix parse_tolerant_internal(const std::string &file_name, InputIt &first,
 	}
 
 	names.push_back(first_line.first);
-	std::copy(first_line.second.begin(), first_line.second.end(),
-			  values.begin());
+	std::copy(first_line.second.begin(), first_line.second.end(), mat.begin());
 
 	// parse the rest of the matrix
 	for (size_t i = 1; i < size; i++) {
 		// read a different number of values, depending on the format.
 		auto line_length = lower_triangle ? i + size_t(diagonal_values) : size;
-		auto line = parse_line_spirit(file_name, first, last, line_length);
+		auto line = parse_line(file_name, input, line_length);
 
 		names.push_back(line.first);
 
 		std::copy(line.second.begin(), line.second.end(),
-				  values.begin() + i * size);
+				  mat.begin() + (i * size));
 	}
 
-	auto ret = matrix{names, values};
+	auto ret = matrix{names, mat};
 
 	if (lower_triangle) {
 		// fix upper triangle
@@ -226,15 +236,18 @@ OutputIt parse_tolerant(const std::string &file_name, OutputIt out)
 		input = &file;
 	}
 
-	input->unsetf(std::ios::skipws);
 	if (!input || !*input) {
 		err(errno, "%s", file_name.c_str());
 	}
 
-	boost::spirit::istream_iterator first(*input), last;
+	const auto skip_blank_lines = [](std::istream *input) {
+		while (input->peek() == '\n') {
+			input->get();
+		}
+	};
 
-	if (input->good() && !input->eof()) {
-		*out++ = parse_tolerant_internal(file_name, first, last);
+	if (skip_blank_lines(input), (input->good() && !input->eof())) {
+		*out++ = parse_tolerant_internal(file_name, input);
 	}
 
 	return out;

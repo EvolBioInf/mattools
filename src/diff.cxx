@@ -23,6 +23,7 @@
 #include <vector>
 #include "matrix.h"
 
+
 matrix diff(const matrix &self, const matrix &other)
 {
 	auto new_names = common_names(self.get_names(), other.get_names());
