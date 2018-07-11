@@ -27,14 +27,16 @@
 
 #include "matrix.h"
 
-template<class T = std::mt19937, std::size_t N = T::state_size>
-auto ProperlySeededRandomEngine () -> typename std::enable_if<!!N, T>::type {
-    typename T::result_type random_data[N];
-    std::random_device source;
-    std::generate(std::begin(random_data), std::end(random_data), std::ref(source));
-    std::seed_seq seeds(std::begin(random_data), std::end(random_data));
-    T seededEngine (seeds);
-    return seededEngine;
+template <class T = std::mt19937, std::size_t N = T::state_size>
+auto ProperlySeededRandomEngine() -> typename std::enable_if<!!N, T>::type
+{
+	typename T::result_type random_data[N];
+	std::random_device source;
+	std::generate(std::begin(random_data), std::end(random_data),
+				  std::ref(source));
+	std::seed_seq seeds(std::begin(random_data), std::end(random_data));
+	T seededEngine(seeds);
+	return seededEngine;
 }
 
 double lower_triangle_avg(const matrix &self)
@@ -111,7 +113,7 @@ double Z(const matrix &self, const matrix &other)
 
 double rmsd(const matrix &self, const matrix &other)
 {
-	const auto& names = self.get_names();
+	const auto &names = self.get_names();
 
 	double dist = 0;
 

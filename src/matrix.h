@@ -467,42 +467,54 @@ auto end_lower_triangle(T &self)
 template <typename T>
 class square_agg
 {
-	T& mat;
-public:
-	square_agg(T& _mat): mat(_mat){}
+	T &mat;
 
-	auto begin()	 {
+  public:
+	square_agg(T &_mat) : mat(_mat)
+	{
+	}
+
+	auto begin()
+	{
 		return matrix_iterator<T, square_iterator_helper>::begin(mat);
 	}
 
-	auto end() {
+	auto end()
+	{
 		return matrix_iterator<T, square_iterator_helper>::end(mat);
 	}
 };
 
 template <typename T>
-auto square(T &self) {
+auto square(T &self)
+{
 	return square_agg<T>(self);
 }
 
 template <typename T>
 class lower_triangle_agg
 {
-	T& mat;
-public:
-	lower_triangle_agg(T& _mat): mat(_mat){}
+	T &mat;
 
-	auto begin()	 {
+  public:
+	lower_triangle_agg(T &_mat) : mat(_mat)
+	{
+	}
+
+	auto begin()
+	{
 		return matrix_iterator<T, ltriangle_iterator_helper>::begin(mat);
 	}
 
-	auto end() {
+	auto end()
+	{
 		return matrix_iterator<T, ltriangle_iterator_helper>::end(mat);
 	}
 };
 
 template <typename T>
-auto lower_triangle(T &self) {
+auto lower_triangle(T &self)
+{
 	return lower_triangle_agg<T>(self);
 }
 
