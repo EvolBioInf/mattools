@@ -103,9 +103,11 @@ static void mat_compare_usage(int status);
  */
 int mat_compare(int argc, char **argv)
 {
+	bool use_relative = false;
 	static struct option long_options[] = {
-		{"help", no_argument, 0, 0},   // print help
-		{0, 0, 0, 0}				   //
+		{"rel", no_argument, 0, 0},
+		{"help", no_argument, 0, 0}, // print help
+		{0, 0, 0, 0}				 //
 	};
 
 	while (true) {
@@ -120,6 +122,8 @@ int mat_compare(int argc, char **argv)
 			auto option_string = std::string(long_options[long_index].name);
 			if (option_string == "help") {
 				mat_compare_usage(EXIT_SUCCESS);
+			} else if (option_string == "rel") {
+				use_relative = true;
 			}
 		} else {
 			mat_compare_usage(EXIT_FAILURE);
@@ -139,7 +143,13 @@ int mat_compare(int argc, char **argv)
 	// check first and second matrices
 	auto count = std::min(first_matrices.size(), second_matrices.size());
 	for (size_t i = 0; i < count; i++) {
-		std::cout << p2_norm(first_matrices[i], second_matrices[i]) << std::endl;
+		double dist = 0.0;
+		if (use_relative) {
+			dist = rel(first_matrices[i], second_matrices[i]);
+		} else {
+			dist = p2_norm(first_matrices[i], second_matrices[i]);
+		}
+		std::cout << dist << std::endl;
 	}
 
 	return 0;
