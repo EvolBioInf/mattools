@@ -241,9 +241,9 @@ matrix sample2(const matrix &self, const ForwardIt first, const ForwardIt last)
 }
 
 // defined in matrix.cxx
-std::vector<matrix> parse(const std::string& file_name);
+std::vector<matrix> parse(const std::string &file_name);
 std::vector<matrix> parse_all(const char *const *);
-std::vector<matrix> parse_all(const std::vector<std::string>& file_names);
+std::vector<matrix> parse_all(const std::vector<std::string> &file_names);
 std::string format(const matrix &, char, const char *, bool);
 
 class square_iterator_helper
