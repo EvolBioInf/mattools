@@ -246,7 +246,9 @@ std::string to_newick(const tree &t, const matrix &m)
 			ret += std::to_string((int)(self->right_support * 100));
 		}
 
-		ret += ":" + std::to_string(self->right_dist) + ")";
+		char buf[20];
+		snprintf(buf, sizeof(buf), "%1.4e", self->right_dist);
+		ret += std::string(":") + buf + ")";
 	};
 
 	ret += "(";
@@ -258,7 +260,10 @@ std::string to_newick(const tree &t, const matrix &m)
 		if (root->right_branch->right_branch) {
 			ret += std::to_string((int)(root->right_support * 100));
 		}
-		ret += ":" + std::to_string(root->right_dist) + ",";
+
+		char buf[20];
+		snprintf(buf, sizeof(buf), "%1.4e", root->right_dist);
+		ret += std::string(":") + buf + ",";
 	}
 
 	root->extra_branch->traverse(&pre, &process, &post);
@@ -266,7 +271,10 @@ std::string to_newick(const tree &t, const matrix &m)
 		if (root->extra_branch->left_branch) {
 			ret += std::to_string((int)(root->extra_support * 100));
 		}
-		ret += ":" + std::to_string(root->extra_dist);
+
+		char buf[20];
+		snprintf(buf, sizeof(buf), "%1.4e", root->extra_dist);
+		ret += std::string(":") + buf;
 	}
 	ret += ");";
 
