@@ -50,12 +50,14 @@ Print general help.
 
 .SH COMPARE OPTIONS
 .TP
-\fB\-f\fR, \fB\--full\fR
-By default, \fBmat\fR computes the euclidean distance of the first two given distance matrices. With this option enabled, all distance matrices are compared pairwise. The output is, yet again, a distance matrix.
+\fB\--delta2\fR
+Use a Fitch-Margolish like measure.
 .TP
 \fB\--help\fR
 Print help for compare command.
-
+.TP
+\fB\--rel\fR
+Compute the average relative dissimilarity.
 
 .SH FORMAT OPTIONS
 .TP
@@ -103,7 +105,7 @@ Do not compute support values.
 
 
 .SH COPYRIGHT
-Copyright \(co 2017 Fabian Klötzl
+Copyright \(co 2017-2019 Fabian Klötzl
 License GPLv3+: GNU GPL version 3 or later.
 .br
 This is free software: you are free to change and redistribute it.
