@@ -92,6 +92,27 @@ double rel(const matrix &self, const matrix &other)
 	return dist / n;
 }
 
+double delta2(const matrix &self, const matrix &other)
+{
+	auto new_names = common_names(self.get_names(), other.get_names());
+
+	auto new_self = sample2(self, new_names.begin(), new_names.end());
+	auto new_other = sample2(other, new_names.begin(), new_names.end());
+
+	double dist = 0;
+	auto other_it = begin_lower_triangle(new_other);
+
+	for (auto entry : lower_triangle(new_self)) {
+		auto numerator = 4 * (entry - *other_it) * (entry - *other_it);
+		auto denominator = (entry + *other_it) * (entry + *other_it);
+
+		dist += numerator / denominator;
+		other_it++;
+	}
+
+	return dist;
+}
+
 static void mat_compare_usage(int status);
 
 /**
@@ -104,10 +125,13 @@ static void mat_compare_usage(int status);
 int mat_compare(int argc, char **argv)
 {
 	bool use_relative = false;
+	bool use_delta2 = false;
+
 	static struct option long_options[] = {
+		{"delta2", no_argument, 0, 0},
+		{"help", no_argument, 0, 0},
 		{"rel", no_argument, 0, 0},
-		{"help", no_argument, 0, 0}, // print help
-		{0, 0, 0, 0}				 //
+		{0, 0, 0, 0} //
 	};
 
 	while (true) {
@@ -124,6 +148,8 @@ int mat_compare(int argc, char **argv)
 				mat_compare_usage(EXIT_SUCCESS);
 			} else if (option_string == "rel") {
 				use_relative = true;
+			} else if (option_string == "delta2") {
+				use_delta2 = true;
 			}
 		} else {
 			mat_compare_usage(EXIT_FAILURE);
@@ -132,7 +158,7 @@ int mat_compare(int argc, char **argv)
 
 	argc -= optind, argv += optind; // hack
 
-	if (argc < 2) errx(1, "too few arguments");
+	if (argc < 2) mat_compare_usage(EXIT_FAILURE);
 
 	auto first_file_name = std::string(argv[0]);
 	auto second_file_name = std::string(argv[1]);
@@ -146,6 +172,8 @@ int mat_compare(int argc, char **argv)
 		double dist = 0.0;
 		if (use_relative) {
 			dist = rel(first_matrices[i], second_matrices[i]);
+		} else if (use_delta2) {
+			dist = delta2(first_matrices[i], second_matrices[i]);
 		} else {
 			dist = p2_norm(first_matrices[i], second_matrices[i]);
 		}
@@ -161,7 +189,9 @@ static void mat_compare_usage(int status)
 		"usage: mat compare [OPTIONS] FILE1 FILE2\n" // this comment is a hack
 		"Compute euclidean distance of distances matrices from two files.\n\n"
 		"Available options:\n"
-		"     --help          print this help\n"};
+		"  --delta2        Compute undirected Fitch-Margoliash distance\n"
+		"  --rel           Compute the average relative dissimilarity\n"
+		"  --help          Print this help\n"};
 
 	fprintf(status == EXIT_SUCCESS ? stdout : stderr, str);
 	exit(status);
