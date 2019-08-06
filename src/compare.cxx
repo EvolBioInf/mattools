@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017  Fabian Klötzl
+ * Copyright (C) 2017-2019  Fabian Klötzl
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -16,6 +16,7 @@
 #include <cmath>
 #include <cstdio>
 #include <err.h>
+#include <experimental/array>
 #include <getopt.h>
 #include <iostream>
 #include <string>
@@ -92,7 +93,9 @@ double rel(const matrix &self, const matrix &other)
 	return dist / n;
 }
 
-double delta2(const matrix &self, const matrix &other)
+template <typename numerator_fn_T, typename denominator_fn_T>
+double delta(const matrix &self, const matrix &other,
+			 numerator_fn_T numerator_fn, denominator_fn_T denominator_fn)
 {
 	auto new_names = common_names(self.get_names(), other.get_names());
 
@@ -103,14 +106,71 @@ double delta2(const matrix &self, const matrix &other)
 	auto other_it = begin_lower_triangle(new_other);
 
 	for (auto entry : lower_triangle(new_self)) {
-		auto numerator = 4 * (entry - *other_it) * (entry - *other_it);
-		auto denominator = (entry + *other_it) * (entry + *other_it);
+		auto numerator = numerator_fn(entry, *other_it);
+		auto denominator = denominator_fn(entry, *other_it);
 
 		dist += numerator / denominator;
 		other_it++;
 	}
 
 	return dist;
+}
+
+double just_Dij(double Dij, double)
+{
+	return Dij;
+}
+
+double just_Dij_squared(double Dij, double)
+{
+	return Dij * Dij;
+}
+
+double difference_squared(double Dij, double dij)
+{
+	return (Dij - dij) * (Dij - dij);
+}
+
+double average_squared(double Dij, double dij)
+{
+	auto temp = (Dij + dij) / 2.0;
+	return temp * temp;
+}
+
+double just_average(double Dij, double dij)
+{
+	auto temp = (Dij + dij) / 2.0;
+	return temp;
+}
+
+double difference_abs(double Dij, double dij)
+{
+	return std::fabs(Dij - dij);
+}
+
+double delta1(const matrix &self, const matrix &other)
+{
+	return delta(self, other, difference_squared, just_Dij_squared);
+}
+
+double delta2(const matrix &self, const matrix &other)
+{
+	return delta(self, other, difference_squared, average_squared);
+}
+
+double delta3(const matrix &self, const matrix &other)
+{
+	return delta(self, other, difference_squared, just_Dij);
+}
+
+double delta4(const matrix &self, const matrix &other)
+{
+	return delta(self, other, difference_squared, just_average);
+}
+
+double delta5(const matrix &self, const matrix &other)
+{
+	return delta(self, other, difference_abs, just_average);
 }
 
 static void mat_compare_usage(int status);
@@ -124,13 +184,18 @@ static void mat_compare_usage(int status);
  */
 int mat_compare(int argc, char **argv)
 {
-	bool use_relative = false;
-	bool use_delta2 = false;
+	int fn_index;
+	auto functions = std::experimental::make_array( //
+		delta1, delta2, delta3, delta4, delta5, rel);
 
 	static struct option long_options[] = {
-		{"delta2", no_argument, 0, 0},
+		{"delta1", no_argument, &fn_index, 0},
+		{"delta2", no_argument, &fn_index, 1},
+		{"delta3", no_argument, &fn_index, 2},
+		{"delta4", no_argument, &fn_index, 3},
+		{"delta5", no_argument, &fn_index, 4},
 		{"help", no_argument, 0, 0},
-		{"rel", no_argument, 0, 0},
+		{"rel", no_argument, &fn_index, 5},
 		{0, 0, 0, 0} //
 	};
 
@@ -146,11 +211,8 @@ int mat_compare(int argc, char **argv)
 			auto option_string = std::string(long_options[long_index].name);
 			if (option_string == "help") {
 				mat_compare_usage(EXIT_SUCCESS);
-			} else if (option_string == "rel") {
-				use_relative = true;
-			} else if (option_string == "delta2") {
-				use_delta2 = true;
 			}
+			// fn_index is set by getopt_long
 		} else {
 			mat_compare_usage(EXIT_FAILURE);
 		}
@@ -169,14 +231,8 @@ int mat_compare(int argc, char **argv)
 	// check first and second matrices
 	auto count = std::min(first_matrices.size(), second_matrices.size());
 	for (size_t i = 0; i < count; i++) {
-		double dist = 0.0;
-		if (use_relative) {
-			dist = rel(first_matrices[i], second_matrices[i]);
-		} else if (use_delta2) {
-			dist = delta2(first_matrices[i], second_matrices[i]);
-		} else {
-			dist = p2_norm(first_matrices[i], second_matrices[i]);
-		}
+		auto fn = functions[fn_index];
+		double dist = fn(first_matrices[i], second_matrices[i]);
 		std::cout << dist << std::endl;
 	}
 
@@ -187,11 +243,15 @@ static void mat_compare_usage(int status)
 {
 	static const char str[] = {
 		"usage: mat compare [OPTIONS] FILE1 FILE2\n" // this comment is a hack
-		"Compute euclidean distance of distances matrices from two files.\n\n"
+		"Measure the distance of distances matrices from two files.\n\n"
 		"Available options:\n"
+		"  --delta1        Compute directed Fitch-Margoliash distance\n"
 		"  --delta2        Compute undirected Fitch-Margoliash distance\n"
-		"  --rel           Compute the average relative dissimilarity\n"
-		"  --help          Print this help\n"};
+		"  --delta3        \n"
+		"  --delta4        \n"
+		"  --delta5        \n"
+		"  --help          Print this help\n"
+		"  --rel           Compute the average relative dissimilarity\n"};
 
 	fprintf(status == EXIT_SUCCESS ? stdout : stderr, str);
 	exit(status);
