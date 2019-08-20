@@ -93,9 +93,10 @@ double rel(const matrix &self, const matrix &other)
 	return dist / n;
 }
 
-template <typename numerator_fn_T, typename denominator_fn_T>
-double delta(const matrix &self, const matrix &other,
-			 numerator_fn_T numerator_fn, denominator_fn_T denominator_fn)
+using function_type = double(double, double);
+
+template <function_type numerator_fn, function_type denominator_fn>
+double delta(const matrix &self, const matrix &other)
 {
 	auto new_names = common_names(self.get_names(), other.get_names());
 
@@ -148,30 +149,11 @@ double difference_abs(double Dij, double dij)
 	return std::fabs(Dij - dij);
 }
 
-double delta1(const matrix &self, const matrix &other)
-{
-	return delta(self, other, difference_squared, just_Dij_squared);
-}
-
-double delta2(const matrix &self, const matrix &other)
-{
-	return delta(self, other, difference_squared, average_squared);
-}
-
-double delta3(const matrix &self, const matrix &other)
-{
-	return delta(self, other, difference_squared, just_Dij);
-}
-
-double delta4(const matrix &self, const matrix &other)
-{
-	return delta(self, other, difference_squared, just_average);
-}
-
-double delta5(const matrix &self, const matrix &other)
-{
-	return delta(self, other, difference_abs, just_average);
-}
+const auto delta1 = delta<difference_squared, just_Dij_squared>;
+const auto delta2 = delta<difference_squared, average_squared>;
+const auto delta3 = delta<difference_squared, just_Dij>;
+const auto delta4 = delta<difference_squared, just_average>;
+const auto delta5 = delta<difference_abs, just_average>;
 
 static void mat_compare_usage(int status);
 
