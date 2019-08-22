@@ -102,7 +102,7 @@ auto parse_line_spirit(const std::string &file_name, ForwardIt &first,
 
 	const auto name_rule = lexeme[+graph][set_name] >> omit[*blank];
 	const auto values_rule = double_[push_back] % *blank;
-	const auto line_rule = name_rule >> -values_rule >> omit[eol];
+	const auto line_rule = name_rule >> -values_rule >> omit[*space];
 
 	bool r = parse(first, last, line_rule);
 
