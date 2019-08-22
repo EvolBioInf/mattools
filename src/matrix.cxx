@@ -147,9 +147,13 @@ matrix parse_tolerant_internal(const std::string &file_name, InputIt &first,
 {
 	using namespace boost::spirit::x3;
 
-	size_t size;
+	size_t size = 0;
 	const auto size_rule = long_;
 	bool r = parse(first, last, size_rule >> eol, size);
+
+	if (!r) {
+		errx(1, "%s: failed to read matrix size", file_name.c_str());
+	}
 
 	if (size == 0) {
 		errx(1, "%s: matrix of size 0", file_name.c_str());
@@ -232,6 +236,10 @@ OutputIt parse_tolerant(const std::string &file_name, OutputIt out)
 	}
 
 	boost::spirit::istream_iterator first(*input), last;
+
+	if (input->eof()) {
+		errx(1, "%s: empty file", file_name.c_str());
+	}
 
 	while (input->good() && !input->eof()) {
 		*out++ = parse_tolerant_internal(file_name, first, last);
