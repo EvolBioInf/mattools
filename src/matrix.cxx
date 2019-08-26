@@ -148,7 +148,7 @@ matrix parse_tolerant_internal(const std::string &file_name, InputIt &first,
 	using namespace boost::spirit::x3;
 
 	size_t size = 0;
-	const auto size_rule = long_;
+	const auto size_rule = omit[*blank] >> long_;
 	bool r = parse(first, last, size_rule >> eol, size);
 
 	if (!r) {
