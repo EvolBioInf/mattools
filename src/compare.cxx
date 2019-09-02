@@ -19,6 +19,7 @@
 #include <experimental/array>
 #include <getopt.h>
 #include <iostream>
+#include <numeric>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -144,9 +145,31 @@ double just_average(double Dij, double dij)
 	return temp;
 }
 
+double just_one(double, double)
+{
+	return 1.0;
+}
+
 double difference_abs(double Dij, double dij)
 {
 	return std::fabs(Dij - dij);
+}
+
+double hausdorff(const matrix &self, const matrix &other)
+{
+	auto new_names = common_names(self.get_names(), other.get_names());
+
+	auto new_self = sample2(self, new_names.begin(), new_names.end());
+	auto new_other = sample2(other, new_names.begin(), new_names.end());
+
+	auto my_max = [](double a, double b) { return std::max(a, b); };
+	auto other_it = begin_lower_triangle(new_other);
+
+	double dist = std::inner_product(begin_lower_triangle(new_self),
+									 end_lower_triangle(new_self), other_it,
+									 0.0, my_max, difference_abs);
+
+	return dist;
 }
 
 const auto delta1 = delta<difference_squared, just_Dij_squared>;
@@ -154,6 +177,7 @@ const auto delta2 = delta<difference_squared, average_squared>;
 const auto delta3 = delta<difference_squared, just_Dij>;
 const auto delta4 = delta<difference_squared, just_average>;
 const auto delta5 = delta<difference_abs, just_average>;
+const auto delta6 = delta<difference_squared, just_one>;
 
 static void mat_compare_usage(int status);
 
@@ -168,7 +192,7 @@ int mat_compare(int argc, char **argv)
 {
 	int fn_index;
 	auto functions = std::experimental::make_array( //
-		delta1, delta2, delta3, delta4, delta5, rel);
+		delta1, delta2, delta3, delta4, delta5, rel, delta6, hausdorff);
 
 	static struct option long_options[] = {
 		{"delta1", no_argument, &fn_index, 0},
@@ -176,6 +200,8 @@ int mat_compare(int argc, char **argv)
 		{"delta3", no_argument, &fn_index, 2},
 		{"delta4", no_argument, &fn_index, 3},
 		{"delta5", no_argument, &fn_index, 4},
+		{"delta6", no_argument, &fn_index, 6},
+		{"hausdorff", no_argument, &fn_index, 7},
 		{"help", no_argument, 0, 0},
 		{"rel", no_argument, &fn_index, 5},
 		{0, 0, 0, 0} //
@@ -232,6 +258,7 @@ static void mat_compare_usage(int status)
 		"  --delta3        \n"
 		"  --delta4        \n"
 		"  --delta5        \n"
+		"  --hausdorff     Find the biggest absolute difference\n"
 		"  --help          Print this help\n"
 		"  --rel           Compute the average relative dissimilarity\n"};
 
