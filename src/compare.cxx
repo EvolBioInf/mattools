@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <err.h>
@@ -28,7 +29,17 @@
 // not exposed, yet
 double p1_norm(const matrix &self, const matrix &other)
 {
-	auto new_names = common_names(self.get_names(), other.get_names());
+	auto self_names = self.get_names();
+	auto other_names = other.get_names();
+	std::sort(self_names.begin(), self_names.end());
+	std::sort(other_names.begin(), other_names.end());
+
+	if (!std::equal(self_names.begin(), self_names.end(), other_names.begin(),
+					other_names.end())) {
+		warnx("The matrices have different sets of names.");
+	}
+
+	auto new_names = common_names(self_names, other_names);
 
 	auto new_self = sample2(self, new_names.begin(), new_names.end());
 	auto new_other = sample2(other, new_names.begin(), new_names.end());
@@ -54,11 +65,17 @@ double p1_norm(const matrix &self, const matrix &other)
  */
 double p2_norm(const matrix &self, const matrix &other)
 {
-	if (self.get_names() != other.get_names()) {
+	auto self_names = self.get_names();
+	auto other_names = other.get_names();
+	std::sort(self_names.begin(), self_names.end());
+	std::sort(other_names.begin(), other_names.end());
+
+	if (!std::equal(self_names.begin(), self_names.end(), other_names.begin(),
+					other_names.end())) {
 		warnx("The matrices have different sets of names.");
 	}
 
-	auto new_names = common_names(self.get_names(), other.get_names());
+	auto new_names = common_names(self_names, other_names);
 
 	auto new_self = sample2(self, new_names.begin(), new_names.end());
 	auto new_other = sample2(other, new_names.begin(), new_names.end());
@@ -78,11 +95,17 @@ double p2_norm(const matrix &self, const matrix &other)
 
 double rel(const matrix &self, const matrix &other)
 {
-	if (self.get_names() != other.get_names()) {
+	auto self_names = self.get_names();
+	auto other_names = other.get_names();
+	std::sort(self_names.begin(), self_names.end());
+	std::sort(other_names.begin(), other_names.end());
+
+	if (!std::equal(self_names.begin(), self_names.end(), other_names.begin(),
+					other_names.end())) {
 		warnx("The matrices have different sets of names.");
 	}
 
-	auto new_names = common_names(self.get_names(), other.get_names());
+	auto new_names = common_names(self_names, other_names);
 
 	auto new_self = sample2(self, new_names.begin(), new_names.end());
 	auto new_other = sample2(other, new_names.begin(), new_names.end());
@@ -107,11 +130,17 @@ using function_type = double(double, double);
 template <function_type numerator_fn, function_type denominator_fn>
 double delta(const matrix &self, const matrix &other)
 {
-	if (self.get_names() != other.get_names()) {
+	auto self_names = self.get_names();
+	auto other_names = other.get_names();
+	std::sort(self_names.begin(), self_names.end());
+	std::sort(other_names.begin(), other_names.end());
+
+	if (!std::equal(self_names.begin(), self_names.end(), other_names.begin(),
+					other_names.end())) {
 		warnx("The matrices have different sets of names.");
 	}
 
-	auto new_names = common_names(self.get_names(), other.get_names());
+	auto new_names = common_names(self_names, other_names);
 
 	auto new_self = sample2(self, new_names.begin(), new_names.end());
 	auto new_other = sample2(other, new_names.begin(), new_names.end());
@@ -169,11 +198,17 @@ double difference_abs(double Dij, double dij)
 
 double hausdorff(const matrix &self, const matrix &other)
 {
-	if (self.get_names() != other.get_names()) {
+	auto self_names = self.get_names();
+	auto other_names = other.get_names();
+	std::sort(self_names.begin(), self_names.end());
+	std::sort(other_names.begin(), other_names.end());
+
+	if (!std::equal(self_names.begin(), self_names.end(), other_names.begin(),
+					other_names.end())) {
 		warnx("The matrices have different sets of names.");
 	}
 
-	auto new_names = common_names(self.get_names(), other.get_names());
+	auto new_names = common_names(self_names, other_names);
 
 	auto new_self = sample2(self, new_names.begin(), new_names.end());
 	auto new_other = sample2(other, new_names.begin(), new_names.end());
