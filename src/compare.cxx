@@ -54,6 +54,10 @@ double p1_norm(const matrix &self, const matrix &other)
  */
 double p2_norm(const matrix &self, const matrix &other)
 {
+	if (self.get_names() != other.get_names()) {
+		warnx("The matrices have different sets of names.");
+	}
+
 	auto new_names = common_names(self.get_names(), other.get_names());
 
 	auto new_self = sample2(self, new_names.begin(), new_names.end());
@@ -74,6 +78,10 @@ double p2_norm(const matrix &self, const matrix &other)
 
 double rel(const matrix &self, const matrix &other)
 {
+	if (self.get_names() != other.get_names()) {
+		warnx("The matrices have different sets of names.");
+	}
+
 	auto new_names = common_names(self.get_names(), other.get_names());
 
 	auto new_self = sample2(self, new_names.begin(), new_names.end());
@@ -99,6 +107,10 @@ using function_type = double(double, double);
 template <function_type numerator_fn, function_type denominator_fn>
 double delta(const matrix &self, const matrix &other)
 {
+	if (self.get_names() != other.get_names()) {
+		warnx("The matrices have different sets of names.");
+	}
+
 	auto new_names = common_names(self.get_names(), other.get_names());
 
 	auto new_self = sample2(self, new_names.begin(), new_names.end());
@@ -157,6 +169,10 @@ double difference_abs(double Dij, double dij)
 
 double hausdorff(const matrix &self, const matrix &other)
 {
+	if (self.get_names() != other.get_names()) {
+		warnx("The matrices have different sets of names.");
+	}
+
 	auto new_names = common_names(self.get_names(), other.get_names());
 
 	auto new_self = sample2(self, new_names.begin(), new_names.end());
