@@ -241,7 +241,7 @@ static void mat_compare_usage(int status);
  */
 int mat_compare(int argc, char **argv)
 {
-	int fn_index;
+	int fn_index = 7;
 	auto functions = std::experimental::make_array( //
 		delta1, delta2, delta3, delta4, delta5, rel, delta6, hausdorff);
 
