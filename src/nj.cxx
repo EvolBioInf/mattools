@@ -24,9 +24,16 @@
 #include <getopt.h>
 #include <iostream>
 #include <numeric>
+#include <random>
+#include <set>
 #include <string>
 #include <vector>
 #include "matrix.h"
+
+static size_t sample_size = 0;
+using support_fn_type = double(const matrix &, const std::vector<uint8_t> &);
+static support_fn_type *support_fn = nullptr;
+static unsigned long seed = 0;
 
 class tree_node
 {
@@ -110,7 +117,7 @@ class tree
 };
 
 void colorize(tree_node *self, std::vector<uint8_t> &buffer, uint8_t color);
-double support(const matrix &distance, const std::vector<uint8_t> &buffer);
+double support_full(const matrix &distance, const std::vector<uint8_t> &buffer);
 
 tree nj(const matrix &m)
 {
@@ -306,7 +313,7 @@ void quartet_left(tree_node *self, const matrix &distance)
 	colorize(self->left_branch->right_branch, buffer, SET_B);
 	colorize(self->right_branch, buffer, SET_C);
 
-	self->left_support = support(distance, buffer);
+	self->left_support = support_fn(distance, buffer);
 }
 
 void quartet_right(tree_node *self, const matrix &distance)
@@ -319,7 +326,7 @@ void quartet_right(tree_node *self, const matrix &distance)
 	colorize(self->right_branch->right_branch, buffer, SET_B);
 	colorize(self->left_branch, buffer, SET_C);
 
-	self->right_support = support(distance, buffer);
+	self->right_support = support_fn(distance, buffer);
 }
 
 void colorize(tree_node *self, std::vector<uint8_t> &buffer, uint8_t color)
@@ -357,11 +364,94 @@ void quartet_all(tree &baum, const matrix &distance)
 		colorize(root->extra_branch->right_branch, buffer, SET_B);
 		colorize(root->left_branch, buffer, SET_C);
 
-		root->extra_support = support(distance, buffer);
+		root->extra_support = support_fn(distance, buffer);
 	}
 }
 
-double support(const matrix &distance, const std::vector<uint8_t> &buffer)
+struct quartet {
+	size_t A, B, C, D;
+	bool operator<(struct quartet other) const noexcept
+	{
+		return memcmp(this, &other, sizeof(*this)) < 0;
+	}
+};
+
+double support_sample(const matrix &distance,
+					  const std::vector<uint8_t> &buffer)
+{
+	const size_t size = distance.get_size();
+
+	size_t set_sizes[4] = {0};
+	for (size_t i = 0; i < size; i++) {
+		set_sizes[buffer[i]]++;
+	}
+
+	size_t quartet_number = set_sizes[SET_A] * set_sizes[SET_B] *
+							set_sizes[SET_C] * set_sizes[SET_D];
+
+	if (quartet_number < sample_size) {
+		return support_full(distance, buffer);
+	}
+
+	// sample `sample_size` quartets and use them to compute the support
+	auto quartets = std::set<struct quartet>();
+
+	if (seed == 0) {
+		std::random_device rd;
+		seed = rd();
+	}
+
+	// todo: seeding from a single int is insufficient.
+	auto engine = std::default_random_engine{seed};
+	std::uniform_int_distribution<size_t> dists[4];
+	for (size_t i = 0; i < 4; i++) {
+		dists[i] = std::uniform_int_distribution<size_t>{
+			0, set_sizes[i] - 1}; // both values are inclusive
+	}
+
+	// convert number in set to index into matrix
+	auto indices_A = std::vector<size_t>(set_sizes[SET_A]);
+	auto indices_B = std::vector<size_t>(set_sizes[SET_B]);
+	auto indices_C = std::vector<size_t>(set_sizes[SET_C]);
+	auto indices_D = std::vector<size_t>(set_sizes[SET_D]);
+	auto i_A = indices_A.begin();
+	auto i_B = indices_B.begin();
+	auto i_C = indices_C.begin();
+	auto i_D = indices_D.begin();
+	for (size_t i = 0; i < buffer.size(); i++) {
+		switch (buffer[i]) {
+			case SET_A: *i_A++ = i; break;
+			case SET_B: *i_B++ = i; break;
+			case SET_C: *i_C++ = i; break;
+			case SET_D: *i_D++ = i; break;
+		}
+	}
+
+	// generate quartets
+	while (quartets.size() < sample_size) {
+		struct quartet q = {
+			indices_A[dists[SET_A](engine)], indices_B[dists[SET_B](engine)],
+			indices_C[dists[SET_C](engine)], indices_D[dists[SET_D](engine)]};
+		quartets.insert(q);
+	}
+
+	size_t non_supporting_counter = 0;
+	auto q = quartets.begin();
+
+	for (size_t i = 0; i < sample_size; i++, q++) {
+		double D_abcd = distance.entry(q->A, q->B) + distance.entry(q->C, q->D);
+
+		if (distance.entry(q->A, q->C) + distance.entry(q->B, q->D) < D_abcd ||
+			distance.entry(q->A, q->D) + distance.entry(q->B, q->C) < D_abcd) {
+
+			non_supporting_counter++;
+		}
+	}
+
+	return 1 - (static_cast<double>(non_supporting_counter) / sample_size);
+}
+
+double support_full(const matrix &distance, const std::vector<uint8_t> &buffer)
 {
 	const size_t size = distance.get_size();
 
@@ -395,7 +485,6 @@ double support(const matrix &distance, const std::vector<uint8_t> &buffer)
 		}
 	}
 
-	// printf("%zu of %zu\n", non_supporting_counter, quartet_counter);
 	return 1 - (static_cast<double>(non_supporting_counter) / quartet_counter);
 }
 
@@ -412,10 +501,13 @@ int mat_nj(int argc, char **argv)
 {
 	static struct option long_options[] = {
 		{"help", no_argument, 0, 'h'},
+		{"sample-size", required_argument, 0, 0},
+		{"seed", required_argument, 0, 0},
 		{"no-support", no_argument, 0, 0},
 		{0, 0, 0, 0} // hack
 	};
 
+	support_fn = &support_full;
 	auto support = true;
 
 	while (true) {
@@ -431,6 +523,16 @@ int mat_nj(int argc, char **argv)
 				auto option_str = std::string(long_options[long_index].name);
 				if (option_str == "no-support") {
 					support = false;
+					break;
+				}
+				if (option_str == "sample-size") {
+					sample_size = std::stod(optarg);
+					support = true;
+					support_fn = &support_sample;
+					break;
+				}
+				if (option_str == "seed") {
+					seed = std::stod(optarg);
 					break;
 				}
 				break;
