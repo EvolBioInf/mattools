@@ -47,8 +47,10 @@ The mattools also come with a module for building a phylogeny via neighbor joini
 
 ## Building
 
-Download the source and then execute the following steps.
+The mattools require the BOOST library as a dependency.
+Next, clone this repository and then build the programs.
 
+    $ git clone https://github.com/evolbioinf/mattools
     $ autoreconf -fi
     $ ./configure
     $ make
@@ -56,7 +58,7 @@ Download the source and then execute the following steps.
 
 ## License
 
-Copyright © 2017 Fabian Klötzl  
+Copyright © 2017-2020 Fabian Klötzl  
 License GPLv3+: GNU GPL version 3 or later.
 
 This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law. The full license text is available at <http://gnu.org/licenses/gpl.html>.
