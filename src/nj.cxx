@@ -402,7 +402,7 @@ double support_sample(const matrix &distance,
 	}
 
 	// todo: seeding from a single int is insufficient.
-	auto engine = std::default_random_engine{seed};
+	auto engine = std::default_random_engine(seed);
 	std::uniform_int_distribution<size_t> dists[4];
 	for (size_t i = 0; i < 4; i++) {
 		dists[i] = std::uniform_int_distribution<size_t>{

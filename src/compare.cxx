@@ -13,11 +13,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <array>
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <err.h>
-#include <experimental/array>
 #include <getopt.h>
 #include <iostream>
 #include <numeric>
@@ -25,6 +25,30 @@
 #include <unordered_map>
 #include <vector>
 #include "matrix.h"
+
+namespace details {
+  template<class> struct is_ref_wrapper : std::false_type {};
+  template<class T> struct is_ref_wrapper<std::reference_wrapper<T>> : std::true_type {};
+
+  template<class T>
+  using not_ref_wrapper = std::negation<is_ref_wrapper<std::decay_t<T>>>;
+
+  template <class D, class...> struct return_type_helper { using type = D; };
+  template <class... Types>
+  struct return_type_helper<void, Types...> : std::common_type<Types...> {
+      static_assert(std::conjunction_v<not_ref_wrapper<Types>...>,
+                    "Types cannot contain reference_wrappers when D is void");
+  };
+
+  template <class D, class... Types>
+  using return_type = std::array<typename return_type_helper<D, Types...>::type,
+                                 sizeof...(Types)>;
+}
+
+template < class D = void, class... Types>
+constexpr details::return_type<D, Types...> make_array(Types&&... t) {
+  return {std::forward<Types>(t)... };
+}
 
 // not exposed, yet
 double p1_norm(const matrix &self, const matrix &other)
@@ -242,7 +266,7 @@ static void mat_compare_usage(int status);
 int mat_compare(int argc, char **argv)
 {
 	int fn_index = 7;
-	auto functions = std::experimental::make_array( //
+	auto functions = make_array( //
 		delta1, delta2, delta3, delta4, delta5, rel, delta6, hausdorff);
 
 	static struct option long_options[] = {
