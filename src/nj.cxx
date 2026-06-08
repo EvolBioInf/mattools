@@ -29,6 +29,7 @@
 #include <string>
 #include <vector>
 #include "matrix.h"
+#include <cstring>
 
 static size_t sample_size = 0;
 using support_fn_type = double(const matrix &, const std::vector<uint8_t> &);
